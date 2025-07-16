@@ -1,0 +1,28 @@
+# 疲劳驾驶检测系统前端依赖
+# Web框架
+Flask==2.3.3
+Werkzeug==3.1.3
+
+# HTTP请求库
+requests~=2.32.3
+
+# 数据库连接
+PyMySQL~=1.1.1
+
+# 深度学习和计算机视觉
+ultralytics~=8.3.0
+opencv-python~=4.8.0
+torch==2.7.1
+torchvision>=0.14.0
+numpy==1.26.4
+
+# 数据处理和可视化
+matplotlib~=3.9.0
+pandas==2.3.0
+Pillow==10.0.1
+
+# 时间处理
+python-dateutil>=2.8.0
+
+# 系统工具
+psutil==7.0.0

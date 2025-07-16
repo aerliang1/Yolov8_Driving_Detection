@@ -1,0 +1,233 @@
+{% extends "common/base.html" %}
+
+{% block title %}个人信息 - 监控人员{% endblock %}
+
+{% block sidebar %}
+<ul class="layui-nav layui-nav-tree">
+  <li class="layui-nav-item">
+    <a href="/monitor/dashboard">
+      <i class="layui-icon layui-icon-camera"></i> 检测中心
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/monitor/records">
+      <i class="layui-icon layui-icon-list"></i> 检测记录
+    </a>
+  </li>
+  <li class="layui-nav-item layui-this">
+    <a href="/monitor/profile">
+      <i class="layui-icon layui-icon-user"></i> 个人信息
+    </a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">个人信息</h1>
+  <p style="margin: 10px 0 0 0; color: #666;">管理您的个人信息和账户设置</p>
+</div>
+
+<div class="layui-row layui-col-space20">
+  <!-- 基本信息 -->
+  <div class="layui-col-md6">
+    <div class="content-card">
+      <div class="content-header">
+        <i class="layui-icon layui-icon-user"></i> 基本信息
+      </div>
+      <div class="content-body">
+        <form class="layui-form" id="profile-form">
+          <div class="layui-form-item">
+            <label class="layui-form-label">用户名</label>
+            <div class="layui-input-block">
+              <input type="text" name="username" value="{{ user_info.username }}" class="layui-input" readonly>
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">角色</label>
+            <div class="layui-input-block">
+              <input type="text" value="监控人员" class="layui-input" readonly>
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">注册时间</label>
+            <div class="layui-input-block">
+              <input type="text" value="{{ user_info.register_time }}" class="layui-input" readonly>
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">最后登录</label>
+            <div class="layui-input-block">
+              <input type="text" value="{{ user_info.last_login }}" class="layui-input" readonly>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 修改密码 -->
+  <div class="layui-col-md6">
+    <div class="content-card">
+      <div class="content-header">
+        <i class="layui-icon layui-icon-password"></i> 修改密码
+      </div>
+      <div class="content-body">
+        <form class="layui-form" id="password-form">
+          <div class="layui-form-item">
+            <label class="layui-form-label">当前密码</label>
+            <div class="layui-input-block">
+              <input type="password" name="current_password" placeholder="请输入当前密码" class="layui-input" lay-verify="required">
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">新密码</label>
+            <div class="layui-input-block">
+              <input type="password" name="new_password" placeholder="请输入新密码" class="layui-input" lay-verify="required|password">
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <label class="layui-form-label">确认密码</label>
+            <div class="layui-input-block">
+              <input type="password" name="confirm_password" placeholder="请再次输入新密码" class="layui-input" lay-verify="required|confirmPassword">
+            </div>
+          </div>
+
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button class="layui-btn" lay-submit lay-filter="change-password">
+                <i class="layui-icon layui-icon-ok"></i> 修改密码
+              </button>
+              <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 修改用户名 -->
+<div class="content-card">
+  <div class="content-header">
+    <i class="layui-icon layui-icon-edit"></i> 修改用户名
+  </div>
+  <div class="content-body">
+    <form class="layui-form" id="username-form">
+      <div class="layui-form-item">
+        <label class="layui-form-label">当前用户名</label>
+        <div class="layui-input-inline">
+          <input type="text" value="{{ user_info.username }}" class="layui-input" readonly>
+        </div>
+      </div>
+
+      <div class="layui-form-item">
+        <label class="layui-form-label">新用户名</label>
+        <div class="layui-input-inline">
+          <input type="text" name="new_username" placeholder="请输入新用户名" class="layui-input" lay-verify="required|username">
+        </div>
+        <div class="layui-form-mid layui-word-aux">用户名长度3-20个字符，只能包含字母、数字和下划线</div>
+      </div>
+
+      <div class="layui-form-item">
+        <label class="layui-form-label">确认密码</label>
+        <div class="layui-input-inline">
+          <input type="password" name="confirm_password_username" placeholder="请输入密码确认" class="layui-input" lay-verify="required">
+        </div>
+      </div>
+
+      <div class="layui-form-item">
+        <div class="layui-input-block">
+          <button class="layui-btn" lay-submit lay-filter="change-username">
+            <i class="layui-icon layui-icon-ok"></i> 修改用户名
+          </button>
+          <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/layui.js"></script>
+<script>
+layui.use(['form', 'layer'], function() {
+  var form = layui.form;
+  var layer = layui.layer;
+  var $ = layui.jquery;
+
+  // 表单验证规则
+  form.verify({
+    password: [
+      /^[\S]{6,20}$/,
+      '密码必须6到20位，且不能出现空格'
+    ],
+    confirmPassword: function(value) {
+      var password = $('input[name=new_password]').val();
+      if (value !== password) {
+        return '两次密码输入不一致';
+      }
+    },
+    username: [
+      /^[a-zA-Z0-9_]{3,20}$/,
+      '用户名长度3-20个字符，只能包含字母、数字和下划线'
+    ]
+  });
+
+  // 修改密码表单提交
+  form.on('submit(change-password)', function(data) {
+    var loading = layer.load(1, {shade: [0.1, '#000']});
+    $.ajax({
+      url: '/api/user/change-password',
+      type: 'POST',
+      data: data.field,
+      success: function(response) {
+        layer.close(loading);
+        if (response.success) {
+          layer.msg('密码修改成功', {icon: 1});
+          $('#password-form')[0].reset();
+        } else {
+          layer.msg(response.message || '密码修改失败', {icon: 2});
+        }
+      },
+      error: function(xhr, status, error) {
+        layer.close(loading);
+        layer.msg('密码修改失败：' + error, {icon: 2});
+      }
+    });
+    return false;
+  });
+
+  // 修改用户名表单提交
+  form.on('submit(change-username)', function(data) {
+    var loading = layer.load(1, {shade: [0.1, '#000']});
+    $.ajax({
+      url: '/api/user/change-username',
+      type: 'POST',
+      data: data.field,
+      success: function(response) {
+        layer.close(loading);
+        if (response.success) {
+          layer.msg('用户名修改成功，请重新登录', {icon: 1});
+          $('#username-form')[0].reset();
+          setTimeout(function() { window.location.href = '/login'; }, 2000);
+        } else {
+          layer.msg(response.message || '用户名修改失败', {icon: 2});
+        }
+      },
+      error: function(xhr, status, error) {
+        layer.close(loading);
+        layer.msg('用户名修改失败：' + error, {icon: 2});
+      }
+    });
+    return false;
+  });
+});
+</script>
+{% endblock %} 

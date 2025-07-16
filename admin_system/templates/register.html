@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员注册 - 独立管理员系统</title>
+    <link rel="stylesheet" href="/static/css/layui.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .register-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 400px;
+            max-width: 90%;
+            backdrop-filter: blur(10px);
+        }
+
+        .register-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .register-title {
+            font-size: 28px;
+            font-weight: 300;
+            color: #333;
+            margin: 0 0 10px 0;
+        }
+
+        .register-subtitle {
+            color: #666;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .register-form {
+            margin-top: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .register-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .register-btn:active {
+            transform: translateY(0);
+        }
+
+        .register-footer {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .register-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .register-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .system-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .password-strength {
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .strength-weak { color: #f44336; }
+        .strength-medium { color: #ff9800; }
+        .strength-strong { color: #4caf50; }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-header">
+            <i class="layui-icon layui-icon-user icon"></i>
+            <h1 class="register-title">管理员注册</h1>
+            <p class="register-subtitle">创建独立管理员账户</p>
+        </div>
+
+        <div id="error-message" class="error-message"></div>
+
+        <form class="register-form" method="POST" action="/register" onsubmit="return validateForm()">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" placeholder="请输入用户名（3-20个字符）" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" placeholder="请输入密码（至少6个字符）" required onkeyup="checkPasswordStrength()">
+                <div id="password-strength" class="password-strength"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">确认密码</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="请再次输入密码" required>
+            </div>
+
+            <div class="form-group">
+                <label for="role">角色</label>
+                <select id="role" name="role" required>
+                    <option value="admin">管理员</option>
+                </select>
+            </div>
+
+            <button type="submit" class="register-btn">
+                <i class="layui-icon layui-icon-add-1"></i> 注册
+            </button>
+        </form>
+
+        <div class="register-footer">
+            <p>已有管理员账户？ <a href="/login">立即登录</a></p>
+        </div>
+    </div>
+
+    <div class="system-info">
+        <p>独立管理员系统 v1.0.0</p>
+        <p>疲劳驾驶检测系统管理控制台</p>
+    </div>
+
+    <script src="/static/layui.js"></script>
+    <script>
+        function validateForm() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const confirmPassword = document.getElementById('confirm_password').value.trim();
+            const role = document.getElementById('role').value;
+
+            if (!username) {
+                showError('请输入用户名');
+                return false;
+            }
+
+            if (username.length < 3 || username.length > 20) {
+                showError('用户名长度应在3-20个字符之间');
+                return false;
+            }
+
+            if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
+                showError('用户名只能包含字母、数字、下划线和中文');
+                return false;
+            }
+
+            if (!password) {
+                showError('请输入密码');
+                return false;
+            }
+
+            if (password.length < 6) {
+                showError('密码至少需要6个字符');
+                return false;
+            }
+
+            if (password !== confirmPassword) {
+                showError('两次输入的密码不一致');
+                return false;
+            }
+
+            if (!role) {
+                showError('请选择角色');
+                return false;
+            }
+
+            return true;
+        }
+
+        function checkPasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthDiv = document.getElementById('password-strength');
+            
+            if (password.length === 0) {
+                strengthDiv.textContent = '';
+                return;
+            }
+            
+            let strength = 0;
+            
+            // 长度检查
+            if (password.length >= 8) strength++;
+            if (password.length >= 12) strength++;
+            
+            // 复杂度检查
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^a-zA-Z0-9]/.test(password)) strength++;
+            
+            if (strength <= 2) {
+                strengthDiv.textContent = '密码强度：弱';
+                strengthDiv.className = 'password-strength strength-weak';
+            } else if (strength <= 4) {
+                strengthDiv.textContent = '密码强度：中等';
+                strengthDiv.className = 'password-strength strength-medium';
+            } else {
+                strengthDiv.textContent = '密码强度：强';
+                strengthDiv.className = 'password-strength strength-strong';
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // 页面加载完成后聚焦到用户名输入框
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('username').focus();
+        });
+    </script>
+</body>
+</html>

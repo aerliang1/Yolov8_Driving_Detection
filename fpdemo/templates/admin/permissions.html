@@ -1,0 +1,375 @@
+{% extends "common/base.html" %}
+
+{% block title %}权限管理 - 管理员{% endblock %}
+
+{% block sidebar %}
+<ul class="layui-nav layui-nav-tree">
+  <li class="layui-nav-item">
+    <a href="/admin/dashboard">
+      <i class="layui-icon layui-icon-console"></i> 控制台
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/system_log">
+      <i class="layui-icon layui-icon-log"></i> 系统日志
+    </a>
+  </li>
+  <li class="layui-nav-item layui-this">
+    <a href="/admin/permissions">
+      <i class="layui-icon layui-icon-user"></i> 权限管理
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/records">
+      <i class="layui-icon layui-icon-list"></i> 检测记录
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/profile">
+      <i class="layui-icon layui-icon-set"></i> 个人信息
+    </a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">权限管理</h1>
+  <p style="margin: 10px 0 0 0; color: #666;">管理用户角色和权限设置</p>
+</div>
+
+<div class="content-card">
+  <div class="content-header">
+    <i class="layui-icon layui-icon-user"></i> 用户管理
+    <div style="float: right;">
+      <button class="layui-btn layui-btn-sm" id="add-user-btn">
+        <i class="layui-icon layui-icon-add-1"></i> 添加用户
+      </button>
+      <button class="layui-btn layui-btn-sm layui-btn-normal" id="refresh-users">
+        <i class="layui-icon layui-icon-refresh"></i> 刷新
+      </button>
+    </div>
+  </div>
+  
+  <!-- 搜索栏 -->
+  <div class="content-body" style="padding-bottom: 0;">
+    <div class="layui-form" style="margin-bottom: 20px;">
+      <div class="layui-form-item">
+        <div class="layui-input-inline" style="width: 300px;">
+          <input type="text" id="search-input" placeholder="搜索用户名..." class="layui-input">
+        </div>
+        <div class="layui-input-inline" style="width: 100px;">
+          <button class="layui-btn" id="search-btn">
+            <i class="layui-icon layui-icon-search"></i> 搜索
+          </button>
+        </div>
+        <div class="layui-input-inline" style="width: 100px;">
+          <button class="layui-btn layui-btn-primary" id="clear-search">
+            清空
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-body">
+    <table class="layui-table" id="users-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>用户名</th>
+          <th>角色</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="users-tbody">
+        <!-- 数据将通过JavaScript动态加载 -->
+      </tbody>
+    </table>
+
+    <div id="no-users" style="text-align: center; padding: 40px; color: #999; display: none;">
+      <i class="layui-icon layui-icon-face-cry" style="font-size: 48px; margin-bottom: 10px;"></i>
+      <p>暂无用户数据</p>
+    </div>
+
+    <div id="loading" style="text-align: center; padding: 40px;">
+      <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i>
+      <p>加载中...</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+layui.use(['element', 'layer', 'form'], function() {
+  var element = layui.element;
+  var layer = layui.layer;
+  var form = layui.form;
+  var $ = layui.jquery;
+
+  // 页面加载完成后执行
+  loadUsers();
+
+  // 搜索功能
+  $('#search-btn').on('click', function() {
+    loadUsers();
+  });
+
+  // 回车搜索
+  $('#search-input').on('keypress', function(e) {
+    if (e.which === 13) {
+      loadUsers();
+    }
+  });
+
+  // 清空搜索
+  $('#clear-search').on('click', function() {
+    $('#search-input').val('');
+    loadUsers();
+  });
+
+  $('#refresh-users').on('click', function() {
+    loadUsers();
+  });
+
+  $('#add-user-btn').on('click', function() {
+    showAddUserModal();
+  });
+
+  function loadUsers() {
+    $('#loading').show();
+    $('#users-tbody').empty();
+    $('#no-users').hide();
+
+    var searchTerm = $('#search-input').val().trim();
+    var url = '/api/admin/users';
+    if (searchTerm) {
+      url += '?search=' + encodeURIComponent(searchTerm);
+    }
+
+    $.ajax({
+      url: url,
+      type: 'GET',
+      success: function(response) {
+        $('#loading').hide();
+
+        if (response.success && response.data.length > 0) {
+          renderUsers(response.data);
+        } else {
+          $('#no-users').show();
+        }
+      },
+      error: function(xhr, status, error) {
+        $('#loading').hide();
+        showError('加载用户列表失败：' + error);
+        $('#no-users').show();
+      }
+    });
+  }
+
+  function renderUsers(users) {
+    var tbody = $('#users-tbody');
+    tbody.empty();
+
+    users.forEach(function(user) {
+      var row = $('<tr>');
+      row.append('<td>' + user.id + '</td>');
+      row.append('<td>' + user.username + '</td>');
+      row.append('<td>' + getRoleBadge(user.role) + '</td>');
+      row.append('<td>' + getStatusBadge(user.status) + '</td>');
+
+      var actionButtons = '<div class="layui-btn-group">';
+      actionButtons += '<button class="layui-btn layui-btn-xs" onclick="editUserRole(' + user.id + ', \'' + user.username + '\', \'' + user.role + '\')">修改角色</button>';
+      if (user.username !== '{{ session.username }}') {
+        actionButtons += '<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteUser(' + user.id + ', \'' + user.username + '\')">删除</button>';
+      }
+      actionButtons += '</div>';
+
+      row.append('<td>' + actionButtons + '</td>');
+
+      tbody.append(row);
+    });
+  }
+
+  function getRoleBadge(role) {
+    var badges = {
+      'driver': '<span class="layui-badge layui-bg-blue">驾驶员</span>',
+      'monitor': '<span class="layui-badge layui-bg-green">监控人员</span>',
+      'admin': '<span class="layui-badge layui-bg-red">管理员</span>'
+    };
+    return badges[role] || '<span class="layui-badge">未知</span>';
+  }
+
+  function getStatusBadge(status) {
+    if (status === 'active') {
+      return '<span class="layui-badge layui-bg-green">正常</span>';
+    } else {
+      return '<span class="layui-badge layui-bg-gray">禁用</span>';
+    }
+  }
+
+  function showAddUserModal() {
+    var modalContent = '<div style="padding: 20px;">' +
+      '<form class="layui-form" id="add-user-form">' +
+        '<div class="layui-form-item">' +
+          '<label class="layui-form-label">用户名</label>' +
+          '<div class="layui-input-block">' +
+            '<input type="text" name="username" placeholder="请输入用户名" class="layui-input" lay-verify="required">' +
+          '</div>' +
+        '</div>' +
+        '<div class="layui-form-item">' +
+          '<label class="layui-form-label">密码</label>' +
+          '<div class="layui-input-block">' +
+            '<input type="password" name="password" placeholder="请输入密码" class="layui-input" lay-verify="required">' +
+          '</div>' +
+        '</div>' +
+        '<div class="layui-form-item">' +
+          '<label class="layui-form-label">角色</label>' +
+          '<div class="layui-input-block">' +
+            '<select name="role" lay-verify="required">' +
+              '<option value="">请选择角色</option>' +
+              '<option value="driver">驾驶员</option>' +
+              '<option value="monitor">监控人员</option>' +
+              '<option value="admin">管理员</option>' +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+        '<div class="layui-form-item">' +
+          '<div class="layui-input-block">' +
+            '<button type="submit" class="layui-btn" lay-submit lay-filter="add-user-submit">添加用户</button>' +
+            '<button type="button" class="layui-btn layui-btn-primary" onclick="layer.closeAll()">取消</button>' +
+          '</div>' +
+        '</div>' +
+      '</form>' +
+    '</div>';
+
+    layer.open({
+      type: 1,
+      title: '添加用户',
+      area: ['500px', '400px'],
+      content: modalContent,
+      success: function() {
+        form.render();
+        form.on('submit(add-user-submit)', function(data) {
+          $.ajax({
+            url: '/api/admin/users',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data.field),
+            success: function(response) {
+              if (response.success) {
+                showSuccess('用户添加成功');
+                layer.closeAll();
+                loadUsers();
+              } else {
+                showError('用户添加失败：' + response.message);
+              }
+            },
+            error: function(xhr, status, error) {
+              showError('用户添加失败：' + error);
+            }
+          });
+          return false;
+        });
+      }
+    });
+  }
+
+  // 将函数暴露到全局作用域，以便onclick调用
+  window.editUserRole = function(userId, username, currentRole) {
+    var modalContent = '<div style="padding: 20px;">' +
+      '<form class="layui-form" id="edit-role-form">' +
+        '<div class="layui-form-item">' +
+          '<label class="layui-form-label">当前角色</label>' +
+          '<div class="layui-input-block">' +
+            '<input type="text" value="' + getRoleName(currentRole) + '" class="layui-input" readonly>' +
+          '</div>' +
+        '</div>' +
+        '<div class="layui-form-item">' +
+          '<label class="layui-form-label">新角色</label>' +
+          '<div class="layui-input-block">' +
+            '<select name="role" lay-verify="required">' +
+              '<option value="">请选择新角色</option>' +
+              '<option value="driver"' + (currentRole === 'driver' ? ' selected' : '') + '>驾驶员</option>' +
+              '<option value="monitor"' + (currentRole === 'monitor' ? ' selected' : '') + '>监控人员</option>' +
+              '<option value="admin"' + (currentRole === 'admin' ? ' selected' : '') + '>管理员</option>' +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+        '<div class="layui-form-item">' +
+          '<div class="layui-input-block">' +
+            '<button type="submit" class="layui-btn" lay-submit lay-filter="edit-role-submit">确认修改</button>' +
+            '<button type="button" class="layui-btn layui-btn-primary" onclick="layer.closeAll()">取消</button>' +
+          '</div>' +
+        '</div>' +
+      '</form>' +
+    '</div>';
+
+    layer.open({
+      type: 1,
+      title: '修改用户角色 - ' + username,
+      area: ['400px', '300px'],
+      content: modalContent,
+      success: function() {
+        form.render();
+        form.on('submit(edit-role-submit)', function(data) {
+          if (data.field.role === currentRole) {
+            showError('新角色不能与当前角色相同');
+            return false;
+          }
+
+          $.ajax({
+            url: '/api/admin/users/' + userId + '/role',
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data.field),
+            success: function(response) {
+              if (response.success) {
+                showSuccess('用户角色修改成功');
+                layer.closeAll();
+                loadUsers();
+              } else {
+                showError('用户角色修改失败：' + response.message);
+              }
+            },
+            error: function(xhr, status, error) {
+              showError('用户角色修改失败：' + error);
+            }
+          });
+          return false;
+        });
+      }
+    });
+  };
+
+  function getRoleName(role) {
+    var roleNames = {
+      'driver': '驾驶员',
+      'monitor': '监控人员',
+      'admin': '管理员'
+    };
+    return roleNames[role] || role;
+  }
+
+  window.deleteUser = function(userId, username) {
+    showConfirm('确定要删除用户 "' + username + '" 吗？此操作不可恢复！', function() {
+      $.ajax({
+        url: '/api/admin/users/' + userId,
+        type: 'DELETE',
+        success: function(response) {
+          if (response.success) {
+            showSuccess('用户删除成功');
+            loadUsers();
+          } else {
+            showError('用户删除失败：' + response.message);
+          }
+        },
+        error: function(xhr, status, error) {
+          showError('用户删除失败：' + error);
+        }
+      });
+    });
+  };
+});
+{% endblock %} 

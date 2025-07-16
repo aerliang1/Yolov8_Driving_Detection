@@ -1,0 +1,565 @@
+{% extends "common/base.html" %}
+
+{% block title %}管理控制台 - 疲劳驾驶检测系统{% endblock %}
+
+{% block sidebar %}
+<ul class="layui-nav layui-nav-tree">
+  <li class="layui-nav-item layui-this">
+    <a href="/admin/dashboard">
+      <i class="layui-icon layui-icon-console"></i> 控制台
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/system_log">
+      <i class="layui-icon layui-icon-log"></i> 系统日志
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/permissions">
+      <i class="layui-icon layui-icon-user"></i> 权限管理
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/records">
+      <i class="layui-icon layui-icon-list"></i> 检测记录
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/profile">
+      <i class="layui-icon layui-icon-set"></i> 个人信息
+    </a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">管理控制台</h1>
+  <p style="margin: 10px 0 0 0; color: #666;">系统概览和快速操作</p>
+</div>
+
+<!-- 统计卡片 -->
+<div class="layui-row layui-col-space20">
+  <div class="layui-col-md3">
+    <div class="content-card">
+      <div class="content-body" style="text-align: center; padding: 30px;">
+        <i class="layui-icon layui-icon-user" style="font-size: 48px; color: #009688; margin-bottom: 10px;"></i>
+        <h3 id="total-users">0</h3>
+        <p style="color: #666; margin: 0;">总用户数</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="layui-col-md3">
+    <div class="content-card">
+      <div class="content-body" style="text-align: center; padding: 30px;">
+        <i class="layui-icon layui-icon-camera" style="font-size: 48px; color: #FFB800; margin-bottom: 10px;"></i>
+        <h3 id="online-drivers">0</h3>
+        <p style="color: #666; margin: 0;">在线驾驶员</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="layui-col-md3">
+    <div class="content-card">
+      <div class="content-body" style="text-align: center; padding: 30px;">
+        <i class="layui-icon layui-icon-chart" style="font-size: 48px; color: #FF5722; margin-bottom: 10px;"></i>
+        <h3 id="today-detections">0</h3>
+        <p style="color: #666; margin: 0;">今日检测</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="layui-col-md3">
+    <div class="content-card">
+      <div class="content-body" style="text-align: center; padding: 30px;">
+        <i class="layui-icon layui-icon-close" style="font-size: 48px; color: #FF5722; margin-bottom: 10px;"></i>
+        <h3 id="fatigue-alerts">0</h3>
+        <p style="color: #666; margin: 0;">疲劳警报</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 快速操作和系统状态同排 -->
+<div class="layui-row layui-col-space20">
+  <div class="layui-col-md4">
+    <div class="content-card">
+      <div class="content-header">
+        <i class="layui-icon layui-icon-set"></i> 快速操作
+      </div>
+      <div class="content-body">
+        <div class="layui-btn-container" style="display: flex; flex-direction: column; gap: 24px; align-items: center; margin-top: 24px;">
+          <a href="/admin/system_log" class="layui-btn" style="width: 180px; border-radius: 8px; box-shadow: 0 2px 8px rgba(102,126,234,0.10); font-size: 16px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;">
+            <i class="layui-icon layui-icon-log" style="font-size: 20px; margin-right: 8px;"></i> 系统日志
+          </a>
+          <a href="/admin/permissions" class="layui-btn" style="width: 180px; border-radius: 8px; box-shadow: 0 2px 8px rgba(102,126,234,0.10); font-size: 16px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;">
+            <i class="layui-icon layui-icon-user" style="font-size: 20px; margin-right: 8px;"></i> 权限管理
+          </a>
+          <a href="/admin/records" class="layui-btn" style="width: 180px; border-radius: 8px; box-shadow: 0 2px 8px rgba(102,126,234,0.10); font-size: 16px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;">
+            <i class="layui-icon layui-icon-list" style="font-size: 20px; margin-right: 8px;"></i> 检测记录
+          </a>
+        </div>
+        <style>
+        .layui-btn-container .layui-btn:hover {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: #fff;
+          box-shadow: 0 4px 16px rgba(102,126,234,0.18);
+          transform: translateY(-2px) scale(1.04);
+        }
+        </style>
+      </div>
+    </div>
+  </div>
+  <div class="layui-col-md8">
+    <div class="content-card">
+      <div class="content-header">
+        <i class="layui-icon layui-icon-chart"></i> 系统状态
+      </div>
+      <div class="content-body">
+        <div class="layui-form">
+          <div class="layui-form-item">
+            <label class="layui-form-label">系统状态</label>
+            <div class="layui-input-block">
+              <span class="layui-badge layui-bg-green">正常运行</span>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">CPU使用率</label>
+            <div class="layui-input-block">
+              <div class="layui-progress" lay-filter="cpu-usage">
+                <div class="layui-progress-bar" lay-percent="45%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">内存使用率</label>
+            <div class="layui-input-block">
+              <div class="layui-progress" lay-filter="memory-usage">
+                <div class="layui-progress-bar" lay-percent="62%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="layui-form-item">
+            <label class="layui-form-label">磁盘使用率</label>
+            <div class="layui-input-block">
+              <div class="layui-progress" lay-filter="disk-usage">
+                <div class="layui-progress-bar" lay-percent="28%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 结束 -->
+
+<!-- 最近活动 -->
+<div class="content-card">
+  <div class="content-header">
+    <i class="layui-icon layui-icon-time"></i> 最近活动
+  </div>
+  <div class="content-body">
+    <table class="layui-table" id="recent-activities">
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>用户</th>
+          <th>操作</th>
+          <th>详情</th>
+          <th>IP地址</th>
+        </tr>
+      </thead>
+      <tbody id="activities-tbody">
+        <!-- 数据将通过JavaScript动态加载 -->
+      </tbody>
+    </table>
+
+    <div id="no-activities" style="text-align: center; padding: 40px; color: #999; display: none;">
+      <i class="layui-icon layui-icon-face-smile" style="font-size: 48px; margin-bottom: 10px;"></i>
+      <p>暂无最近活动</p>
+    </div>
+  </div>
+</div>
+
+<!-- 系统公告 -->
+<div class="content-card">
+  <div class="content-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px 8px 0 0; padding: 15px 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center;">
+        <i class="layui-icon layui-icon-notice" style="font-size: 18px; margin-right: 8px;"></i>
+        <span style="font-weight: 600; font-size: 16px;">系统公告</span>
+      </div>
+      <button class="layui-btn layui-btn-sm" 
+              style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 6px; padding: 6px 12px; font-size: 12px; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; line-height: 1;" 
+              onmouseover="this.style.background='rgba(255,255,255,0.3)'" 
+              onmouseout="this.style.background='rgba(255,255,255,0.2)'"
+              onclick="addAnnouncement()">
+        <i class="layui-icon layui-icon-add-1" style="font-size: 12px; margin-right: 4px;"></i>
+        <span style="font-size: 12px;">发布公告</span>
+      </button>
+    </div>
+  </div>
+  <div class="content-body" style="padding: 20px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+    <div id="announcements">
+      <!-- 公告内容将通过JavaScript动态加载 -->
+    </div>
+
+    <div id="no-announcements" style="text-align: center; padding: 40px; color: #6c757d; display: none; background: white; border-radius: 8px; margin: 10px 0;">
+      <i class="layui-icon layui-icon-notice" style="font-size: 48px; margin-bottom: 15px; color: #dee2e6;"></i>
+      <p style="font-size: 14px; margin: 0;">暂无系统公告</p>
+      <p style="font-size: 12px; color: #adb5bd; margin: 10px 0 0 0;">点击上方"发布公告"按钮创建第一条公告</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+// 全局函数定义
+function loadDashboardData() {
+  layui.use(['element'], function() {
+    var element = layui.element;
+    var $ = layui.jquery;
+    
+    // 显示加载状态
+    $('#total-users').text('加载中...');
+    $('#online-drivers').text('加载中...');
+    $('#today-detections').text('加载中...');
+    $('#fatigue-alerts').text('加载中...');
+    
+    $.ajax({
+      url: '/api/admin/dashboard-stats',
+      type: 'GET',
+      timeout: 10000, // 10秒超时
+      success: function(response) {
+        if (response.success && response.data) {
+          var data = response.data;
+          $('#total-users').text(data.total_users || 0);
+          $('#online-drivers').text(data.online_drivers || 0);
+          $('#today-detections').text(data.today_detections || 0);
+          $('#fatigue-alerts').text(data.fatigue_alerts || 0);
+
+          // 更新进度条
+          element.progress('cpu-usage', (data.cpu_usage || 0) + '%');
+          element.progress('memory-usage', (data.memory_usage || 0) + '%');
+          element.progress('disk-usage', (data.disk_usage || 0) + '%');
+        } else {
+          console.error('仪表板数据格式错误:', response);
+          // 设置默认值
+          $('#total-users').text('0');
+          $('#online-drivers').text('0');
+          $('#today-detections').text('0');
+          $('#fatigue-alerts').text('0');
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error('加载仪表板数据失败:', error);
+        // 设置默认值
+        $('#total-users').text('0');
+        $('#online-drivers').text('0');
+        $('#today-detections').text('0');
+        $('#fatigue-alerts').text('0');
+      }
+    });
+  });
+}
+
+function loadRecentActivities() {
+  var $ = layui.jquery;
+  $('#no-activities').hide();
+  $.ajax({
+    url: '/api/admin/recent-activities',
+    type: 'GET',
+    timeout: 10000,
+    success: function(response) {
+      if (response.success && response.data && response.data.length > 0) {
+        renderActivities(response.data);
+        $('#no-activities').hide();
+      } else {
+        $('#activities-tbody').empty();
+        $('#no-activities').show();
+      }
+    },
+    error: function() {
+      $('#activities-tbody').empty();
+      $('#no-activities').show();
+    }
+  });
+}
+
+function renderActivities(activities) {
+  var $ = layui.jquery;
+  var tbody = $('#activities-tbody');
+  tbody.empty();
+  activities.forEach(function(activity) {
+    var row = $('<tr>');
+    row.append('<td>' + formatDateTime(activity.timestamp) + '</td>');
+    row.append('<td>' + activity.username + '</td>');
+    row.append('<td>' + activity.action + '</td>');
+    row.append('<td>' + activity.details + '</td>');
+    row.append('<td>' + activity.ip_address + '</td>');
+    tbody.append(row);
+  });
+}
+
+function loadAnnouncements() {
+  var $ = layui.jquery;
+  $('#no-announcements').hide();
+  $.ajax({
+    url: '/api/admin/announcements',
+    type: 'GET',
+    timeout: 10000,
+    success: function(response) {
+      if (response.success && response.data && response.data.length > 0) {
+        renderAnnouncements(response.data);
+        $('#no-announcements').hide();
+      } else {
+        $('#announcements').empty();
+        $('#no-announcements').show();
+      }
+    },
+    error: function() {
+      $('#announcements').empty();
+      $('#no-announcements').show();
+    }
+  });
+}
+
+function renderAnnouncements(announcements) {
+  var $ = layui.jquery;
+  var container = $('#announcements');
+  container.empty();
+  announcements.forEach(function(announcement) {
+    var announcementHtml = `
+      <div class="layui-card announcement-card" style="margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+        <div class="layui-card-header" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-bottom: 1px solid #dee2e6; padding: 15px 20px; border-radius: 8px 8px 0 0; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="flex: 1;">
+              <span style="font-weight: 600; color: #2c3e50; font-size: 16px;">${announcement.title}</span>
+              <div style="margin-top: 8px; display: flex; align-items: center; gap: 15px;">
+                <div style="display: flex; align-items: center;">
+                  <i class="layui-icon layui-icon-time" style="color: #6c757d; font-size: 12px;"></i>
+                  <span style="color: #6c757d; font-size: 12px; margin-left: 5px;">发布时间：${formatDateTime(announcement.created_at)}</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                  <i class="layui-icon layui-icon-user" style="color: #6c757d; font-size: 12px;"></i>
+                  <span style="color: #6c757d; font-size: 12px; margin-left: 5px;">管理员</span>
+                </div>
+              </div>
+            </div>
+            <div class="announcement-actions" style="opacity: 0; transition: opacity 0.3s ease; display: flex; align-items: center;">
+              <button class="layui-btn layui-btn-danger layui-btn-xs" 
+                      style="border-radius: 4px; padding: 6px 10px; font-size: 11px; border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1;" 
+                      onclick="deleteAnnouncement(${announcement.id})"
+                      title="删除公告">
+                <i class="layui-icon layui-icon-delete" style="font-size: 12px; margin-right: 2px;"></i>
+                <span style="font-size: 11px;">删除</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="layui-card-body" style="padding: 20px; background: #fff; border-radius: 0 0 8px 8px; line-height: 1.6; color: #495057;">
+          <div style="white-space: pre-wrap; word-wrap: break-word;">${announcement.content}</div>
+        </div>
+      </div>
+    `;
+    container.append(announcementHtml);
+  });
+  
+  // 添加鼠标悬停效果
+  container.find('.announcement-card').hover(
+    function() {
+      $(this).find('.announcement-actions').css('opacity', '1');
+      $(this).css('transform', 'translateY(-2px)');
+      $(this).css('box-shadow', '0 4px 12px rgba(0,0,0,0.15)');
+    },
+    function() {
+      $(this).find('.announcement-actions').css('opacity', '0');
+      $(this).css('transform', 'translateY(0)');
+      $(this).css('box-shadow', '0 2px 8px rgba(0,0,0,0.1)');
+    }
+  );
+}
+
+function systemBackup() {
+  showConfirm('确定要创建系统备份吗？', function() {
+    var $ = layui.jquery;
+    $.ajax({
+      url: '/api/admin/system-backup',
+      type: 'POST',
+      success: function(response) {
+        if (response.success) {
+          showSuccess('系统备份创建成功');
+        } else {
+          showError('系统备份创建失败：' + response.message);
+        }
+      },
+      error: function(xhr, status, error) {
+        showError('系统备份创建失败：' + error);
+      }
+    });
+  });
+}
+
+function systemSettings() {
+  layui.use(['layer'], function() {
+    var layer = layui.layer;
+    layer.open({
+      type: 2,
+      title: '系统设置',
+      area: ['800px', '600px'],
+      content: '/admin/system-settings'
+    });
+  });
+}
+
+function addAnnouncement() {
+  layui.use(['layer', 'form'], function() {
+    var layer = layui.layer;
+    var form = layui.form;
+    var $ = layui.jquery;
+    
+    layer.open({
+      type: 1,
+      title: '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; margin: -15px -20px 20px -20px; border-radius: 8px 8px 0 0;"><i class="layui-icon layui-icon-notice" style="margin-right: 8px;"></i>发布系统公告</div>',
+      area: ['650px', '450px'],
+      skin: 'layui-layer-molv',
+      content: `
+        <div style="padding: 20px; background: #f8f9fa;">
+          <form class="layui-form" id="announcement-form" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div class="layui-form-item">
+              <label class="layui-form-label" style="color: #495057; font-weight: 600;">公告标题</label>
+              <div class="layui-input-block">
+                <input type="text" name="title" placeholder="请输入公告标题" 
+                       class="layui-input" lay-verify="required" 
+                       style="border-radius: 6px; border: 1px solid #dee2e6; padding: 10px 15px; transition: border-color 0.3s ease;"
+                       onfocus="this.style.borderColor='#667eea'" 
+                       onblur="this.style.borderColor='#dee2e6'">
+              </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+              <label class="layui-form-label" style="color: #495057; font-weight: 600;">公告内容</label>
+              <div class="layui-input-block">
+                <textarea name="content" placeholder="请输入公告内容，支持换行" 
+                          class="layui-textarea" lay-verify="required" 
+                          style="border-radius: 6px; border: 1px solid #dee2e6; padding: 15px; min-height: 120px; resize: vertical; transition: border-color 0.3s ease;"
+                          onfocus="this.style.borderColor='#667eea'" 
+                          onblur="this.style.borderColor='#dee2e6'"></textarea>
+              </div>
+            </div>
+            <div class="layui-form-item" style="margin-top: 30px;">
+              <div class="layui-input-block" style="text-align: center;">
+                <button class="layui-btn" lay-submit lay-filter="publish-announcement" 
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 6px; padding: 10px 25px; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; line-height: 1;"
+                        onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)'"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">
+                  <i class="layui-icon layui-icon-ok" style="font-size: 14px; margin-right: 5px;"></i>
+                  <span style="font-size: 14px;">发布公告</span>
+                </button>
+                <button type="button" class="layui-btn layui-btn-primary" onclick="layer.closeAll()" 
+                        style="border-radius: 6px; padding: 10px 25px; font-size: 14px; margin-left: 15px; border: 1px solid #dee2e6; color: #6c757d; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; line-height: 1;"
+                        onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.borderColor='#adb5bd'"
+                        onmouseout="this.style.backgroundColor='white'; this.style.borderColor='#dee2e6'">
+                  <i class="layui-icon layui-icon-close" style="font-size: 14px; margin-right: 5px;"></i>
+                  <span style="font-size: 14px;">取消</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      `,
+      success: function() {
+        form.on('submit(publish-announcement)', function(data) {
+          console.log('表单数据:', data.field);
+          
+          $.ajax({
+            url: '/api/admin/announcements',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data.field),
+            success: function(response) {
+              if (response.success) {
+                showSuccess('公告发布成功');
+                layer.closeAll();
+                loadAnnouncements();
+              } else {
+                showError('公告发布失败：' + response.message);
+              }
+            },
+            error: function(xhr, status, error) {
+              console.error('AJAX错误:', xhr.responseText);
+              showError('公告发布失败：' + error);
+            }
+          });
+          return false;
+        });
+      }
+    });
+  });
+}
+window.addAnnouncement = addAnnouncement;
+
+function deleteAnnouncement(announcementId) {
+  showConfirm('确定要删除此公告吗？', function() {
+    var $ = layui.jquery;
+    $.ajax({
+      url: '/api/admin/announcements/' + announcementId,
+      type: 'DELETE',
+      success: function(response) {
+        if (response.success) {
+          showSuccess('公告删除成功');
+          loadAnnouncements();
+        } else {
+          showError('公告删除失败：' + response.message);
+        }
+      },
+      error: function(xhr, status, error) {
+        showError('公告删除失败：' + error);
+      }
+    });
+  });
+}
+window.deleteAnnouncement = deleteAnnouncement;
+
+function formatDateTime(timestamp) {
+  // 1. 先处理标准字符串
+  if (typeof timestamp === 'string') {
+    // 形如 '2025-07-06 17:00:00'
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(timestamp)) {
+      return timestamp;
+    }
+    // 其它字符串直接返回
+    return timestamp;
+  }
+  // 2. 处理Date对象
+  if (timestamp instanceof Date && !isNaN(timestamp.getTime())) {
+    return timestamp.getFullYear() + '-' +
+      String(timestamp.getMonth() + 1).padStart(2, '0') + '-' +
+      String(timestamp.getDate()).padStart(2, '0') + ' ' +
+      String(timestamp.getHours()).padStart(2, '0') + ':' +
+      String(timestamp.getMinutes()).padStart(2, '0') + ':' +
+      String(timestamp.getSeconds()).padStart(2, '0');
+  }
+  // 3. 其它情况直接返回
+  return timestamp;
+}
+
+// 页面初始化
+layui.use(['element', 'layer', 'form'], function() {
+  var element = layui.element;
+  var layer = layui.layer;
+  var form = layui.form;
+  var $ = layui.jquery;
+  $(document).ready(function() {
+    loadDashboardData();
+    loadRecentActivities();
+    loadAnnouncements();
+    setInterval(function() {
+      loadDashboardData();
+      loadRecentActivities();
+      loadAnnouncements();
+    }, 30000);
+  });
+});
+{% endblock %}

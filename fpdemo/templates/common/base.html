@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}疲劳驾驶检测系统{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/layui.css">
+  <style>
+    body {
+      background-color: #f5f7fa;
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .layui-layout-admin .layui-header {
+      background-color: #009688;
+      height: 60px;
+      line-height: 60px;
+    }
+
+    .layui-layout-admin .layui-logo {
+      color: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      width: 200px;
+    }
+
+    .layui-layout-admin .layui-side {
+      background-color: #2F4056;
+      width: 200px;
+    }
+
+    .layui-layout-admin .layui-body {
+      background-color: #f5f7fa;
+      left: 200px;
+    }
+
+    .layui-nav-tree {
+      background-color: #2F4056;
+    }
+
+    .layui-nav-tree .layui-nav-item a {
+      color: #c2c2c2;
+      padding: 12px 20px;
+    }
+
+    .layui-nav-tree .layui-nav-item a:hover {
+      background-color: #009688;
+      color: #fff;
+    }
+
+    .layui-nav-tree .layui-nav-item.layui-this a {
+      background-color: #009688;
+      color: #fff;
+    }
+
+    .layui-nav-tree .layui-nav-child {
+      background-color: #1E2D3D;
+    }
+
+    .layui-nav-tree .layui-nav-child a {
+      padding-left: 40px;
+    }
+
+    .user-info {
+      float: right;
+      color: #fff;
+      margin-right: 20px;
+    }
+
+    .user-info i {
+      margin-right: 5px;
+    }
+
+    .user-info a {
+      color: #fff;
+      margin-left: 15px;
+    }
+
+    .user-info a:hover {
+      color: #f0f0f0;
+    }
+
+    .main-content {
+      padding: 20px;
+      min-height: calc(100vh - 60px);
+    }
+
+    .page-header {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .page-title {
+      margin: 0;
+      color: #333;
+      font-size: 24px;
+      font-weight: 500;
+    }
+
+    .content-card {
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .content-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .content-body {
+      padding: 20px;
+    }
+
+    .btn-group {
+      margin: 10px 0;
+    }
+
+    .btn-group .layui-btn {
+      margin-right: 10px;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .status-online {
+      background-color: #5FB878;
+    }
+
+    .status-offline {
+      background-color: #FF5722;
+    }
+
+    .status-warning {
+      background-color: #FFB800;
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="layui-layout-body">
+  <div class="layui-layout layui-layout-admin">
+    <!-- 顶部导航 -->
+    <div class="layui-header">
+      <div class="layui-logo">疲劳驾驶检测系统</div>
+      <div class="user-info">
+        <i class="layui-icon layui-icon-user"></i>
+        <span>{{ username }}</span>
+        <span style="margin-left: 10px; color: #ccc;">({{ role_name }})</span>
+        <a href="/{{ role }}/profile">
+          <i class="layui-icon layui-icon-set"></i> 个人设置
+        </a>
+        <a href="/logout">
+          <i class="layui-icon layui-icon-out"></i> 退出
+        </a>
+      </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div class="layui-side layui-bg-black">
+      <div class="layui-side-scroll">
+        {% block sidebar %}{% endblock %}
+      </div>
+    </div>
+
+    <!-- 主体内容 -->
+    <div class="layui-body">
+      <div class="main-content">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/layui.js"></script>
+  <script>
+    layui.use(['element', 'layer', 'form'], function() {
+      var element = layui.element;
+      var layer = layui.layer;
+      var form = layui.form;
+      var $ = layui.jquery;
+
+      // 全局配置
+      window.appConfig = {
+        username: '{{ username }}',
+        role: '{{ role }}',
+        roleName: '{{ role_name }}'
+      };
+
+      // 通用函数
+      window.showLoading = function() {
+        return layer.load(1, {shade: [0.1, '#000']});
+      };
+
+      window.hideLoading = function() {
+        layer.closeAll('loading');
+      };
+
+      window.showSuccess = function(msg) {
+        layer.msg(msg, {icon: 1, time: 2000});
+      };
+
+      window.showError = function(msg) {
+        layer.msg(msg, {icon: 2, time: 3000});
+      };
+
+      window.showConfirm = function(msg, callback) {
+        layer.confirm(msg, {
+          title: '确认',
+          btn: ['确定', '取消']
+        }, function(index) {
+          layer.close(index);
+          if (callback) callback();
+        });
+      };
+
+      // 处理会话过期
+      $(document).ajaxError(function(event, xhr, settings) {
+        if (xhr.status === 401) {
+          layer.msg('会话已过期，请重新登录', {icon: 2});
+          setTimeout(function() {
+            window.location.href = '/login';
+          }, 1500);
+        }
+      });
+
+      {% block extra_js %}{% endblock %}
+    });
+  </script>
+</body>
+</html> 

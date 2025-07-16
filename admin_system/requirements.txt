@@ -1,0 +1,10 @@
+# 独立管理员系统依赖包
+Flask==3.0.3
+Flask-CORS==6.0.1
+PyMySQL==1.1.1
+Werkzeug==3.0.6
+Jinja2==3.1.6
+itsdangerous==2.2.0
+click==8.1.7
+blinker==1.6.2
+MarkupSafe==2.1.3

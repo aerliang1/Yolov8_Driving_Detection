@@ -1,0 +1,1990 @@
+
+{% extends "common/base.html" %}
+
+{% block title %}疲劳检测 - 驾驶人员{% endblock %}
+
+{% block sidebar %}
+<ul class="layui-nav layui-nav-tree">
+  <li class="layui-nav-item layui-this">
+    <a href="/driver/dashboard">
+      <i class="layui-icon layui-icon-camera"></i> 检测
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/driver/records">
+      <i class="layui-icon layui-icon-list"></i> 检测记录
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/driver/profile">
+      <i class="layui-icon layui-icon-set"></i> 个人信息
+    </a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<!-- 公告弹窗 -->
+<div id="announcement-modal" style="display: none;">
+    <div class="layui-card" style="margin: 20px;">
+      <div class="layui-card-header">
+        <h3><i class="layui-icon layui-icon-notice"></i> 系统公告</h3>
+      </div>
+      <div class="layui-card-body">
+        <div class="layui-row">
+          <!-- 左侧公告列表 -->
+          <div class="layui-col-md4">
+            <div class="announcement-list" id="announcement-list">
+              <!-- 公告标题列表将通过JavaScript动态加载 -->
+            </div>
+          </div>
+          <!-- 右侧公告内容 -->
+          <div class="layui-col-md8">
+            <div class="announcement-content" id="announcement-content">
+              <div class="no-announcement" style="text-align: center; padding: 40px; color: #999;">
+                <i class="layui-icon layui-icon-notice" style="font-size: 48px; margin-bottom: 10px;"></i>
+                <p>请选择公告查看详情</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="layui-form-item" style="margin-top: 20px; text-align: center;">
+          <button class="layui-btn layui-btn-lg" onclick="closeAnnouncementModal()">
+            <i class="layui-icon layui-icon-ok"></i> 确定
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div class="page-header">
+  <h1 class="page-title">疲劳检测</h1>
+  <p style="margin: 10px 0 0 0; color: #666;">请选择检测方式</p>
+</div>
+
+<div class="layui-row layui-col-space20">
+  <div class="layui-col-md8">
+    <div class="content-card">
+      <div class="content-header">
+        <i class="layui-icon layui-icon-camera"></i> 检测方式
+      </div>
+      <div class="content-body">
+        <!-- 检测方式按钮 -->
+        <div class="layui-btn-group" style="margin-bottom: 20px;" id="detect-buttons">
+          <!-- <button class="layui-btn" onclick="startImageDetection()"><i class="layui-icon layui-icon-upload"></i> 图片检测</button>
+          <button class="layui-btn" onclick="startVideoDetection()"><i class="layui-icon layui-icon-video"></i> 视频检测</button> -->
+          <button class="layui-btn" onclick="startCameraDetection()"><i class="layui-icon layui-icon-camera"></i> 摄像头检测</button>
+          <!-- <button class="layui-btn" onclick="showRemoteCameraDialog()"><i class="layui-icon layui-icon-link"></i> 远程摄像头</button>
+          <button class="layui-btn layui-btn-danger" onclick="stopDetection()"><i class="layui-icon layui-icon-close"></i> 停止检测</button>
+          <button class="layui-btn layui-btn-warm" onclick="saveRecording()"><i class="layui-icon layui-icon-download-circle"></i> 保存录制</button> -->
+          <button class="layui-btn layui-btn-primary" onclick="resetDetection()"><i class="layui-icon layui-icon-refresh"></i> 重置数据</button>
+        </div>
+
+        <!-- 通用(隐藏)文件输入，用于图片/视频检测 -->
+        <input type="file" id="detect-file" style="display:none;" />
+
+        <!-- 模型管理区域 -->
+        <div class="model-management" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+          <h4 style="margin: 0 0 15px 0; color: #333;">
+            <i class="layui-icon layui-icon-set"></i> 模型管理
+          </h4>
+          <div class="layui-row layui-col-space10">
+            <div class="layui-col-md6">
+              <div class="layui-form">
+                <div class="layui-form-item">
+                  <label class="layui-form-label">当前模型</label>
+                  <div class="layui-input-block">
+                    <select id="model-select" lay-filter="model-select" lay-search>
+                      <option value="">请选择模型</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-md6">
+              <button class="layui-btn layui-btn-sm" onclick="showModelUploadDialog()">
+                <i class="layui-icon layui-icon-upload"></i> 上传模型
+              </button>
+              <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="refreshModelList()">
+                <i class="layui-icon layui-icon-refresh"></i> 刷新
+              </button>
+              <button class="layui-btn layui-btn-sm layui-btn-warm" onclick="autoSelectFirstModel()">
+                <i class="layui-icon layui-icon-refresh-3"></i> 自动选择
+              </button>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="image-file" accept="image/*" style="display: none;" onchange="handleImageFileSelect(this)">
+        <input type="file" id="video-file" accept="video/*" style="display: none;" onchange="handleVideoFileSelect(this)">
+        <div class="detect-container" id="detect-container">
+          <div class="detect-placeholder">
+            <i class="layui-icon layui-icon-camera" style="font-size: 64px; color: #ccc;"></i>
+            <p>请选择检测方式</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="layui-col-md4">
+    <div class="content-card">
+      <div class="content-header">
+        <i class="layui-icon layui-icon-ok-circle"></i> 检测结果
+      </div>
+      <div class="content-body">
+        <div class="result-container" id="result-container">
+          <div class="result-placeholder">
+
+
+            <!-- 检测统计信息 -->
+            <div class="detection-stats" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; text-align: left;">
+              <h5 style="margin: 0 0 10px 0; color: #333; text-align: center;">实时检测统计</h5>
+
+              <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #666;">闭眼帧数:</span>
+                <span id="closed-eyes-count" style="color: #FF5722; font-weight: bold;">0</span>
+              </div>
+
+              <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #666;">张嘴帧数:</span>
+                <span id="open-mouth-count" style="color: #FF5722; font-weight: bold;">0</span>
+              </div>
+
+              <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #666;">睁眼帧数:</span>
+                <span id="open-eyes-count" style="color: #5FB878; font-weight: bold;">0</span>
+              </div>
+
+              <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #666;">闭嘴帧数:</span>
+                <span id="closed-mouth-count" style="color: #5FB878; font-weight: bold;">0</span>
+              </div>
+
+              <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #666;">总检测帧数:</span>
+                <span id="total-detections" style="color: #333; font-weight: bold;">0</span>
+              </div>
+
+              <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #666;">疲劳指标:</span>
+                <span id="fatigue-indicators" style="color: #FFB800; font-weight: bold;">无</span>
+              </div>
+
+              <div class="stats-row" style="display: flex; justify-content: space-between;">
+                <span style="color: #666;">检测时间:</span>
+                <span id="detection-time" style="color: #999; font-size: 12px;">--:--:--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="detection-status">
+          <h4>检测状态</h4>
+          <div class="status-item">
+            <span class="status-label">检测方式:</span>
+            <span class="status-value" id="detect-method">-</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">检测状态:</span>
+            <span class="status-value" id="detection-status">未开始</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">疲劳程度:</span>
+            <span class="status-value" id="fatigue-level">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="content-card">
+  <div class="content-header">
+    <i class="layui-icon layui-icon-log"></i> 检测日志
+  </div>
+  <div class="content-body">
+    <div class="log-container" id="log-container">
+      <p><i class="layui-icon layui-icon-info-circle" style="color: #009688;"></i> 系统已就绪，等待检测</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .detect-container {
+    height: 400px;
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .detect-container img,
+  .detect-container video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+  }
+  .detect-placeholder {
+    text-align: center;
+    color: #999;
+  }
+  .detect-placeholder p {
+    margin-top: 15px;
+    font-size: 16px;
+  }
+  .result-container {
+    height: 300px;
+    background-color: #f9f9f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .result-placeholder {
+    text-align: center;
+    color: #999;
+  }
+  .result-placeholder p {
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .detection-status {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 6px;
+  }
+  .detection-status h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+  }
+  .status-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .status-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+  .status-label {
+    font-weight: bold;
+    color: #666;
+  }
+  .status-value {
+    color: #333;
+  }
+  .log-container {
+    min-height: 120px;
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-y: auto;
+    background-color: #fafafa;
+  }
+  .log-container p {
+    margin: 5px 0;
+  }
+  .log-container i {
+    margin-right: 8px;
+  }
+  announcement-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: none; /* 默认隐藏 */
+    justify-content: center;
+    align-items: center;
+  }
+
+  .announcement-list {
+    height: 400px;
+    overflow-y: auto;
+    border-right: 1px solid #eee;
+    padding-right: 10px;
+  }
+
+  .announcement-item {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    margin-bottom: 5px;
+  }
+
+  .announcement-item:hover {
+    background-color: #f0f9ff;
+    transform: translateX(5px);
+  }
+
+  .announcement-item.selected {
+    background-color: #e6f3ff;
+    border-left: 3px solid #009688;
+  }
+
+  .announcement-title {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+    font-size: 14px;
+  }
+
+  .announcement-time {
+    font-size: 12px;
+    color: #999;
+  }
+
+  .announcement-content {
+    height: 400px;
+    overflow-y: auto;
+    padding-left: 15px;
+  }
+
+  .announcement-detail h3 {
+    color: #333;
+    border-bottom: 2px solid #009688;
+    padding-bottom: 10px;
+  }
+
+  .announcement-meta {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 20px;
+  }
+
+  .announcement-body {
+    line-height: 1.8;
+    color: #333;
+    font-size: 14px;
+  }
+
+  .no-announcement {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+  }
+
+  .no-announcement i {
+    font-size: 48px;
+    margin-bottom: 10px;
+    display: block;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/detect_common.js"></script>
+<script src="/static/js/yolo_detector.js"></script>
+<script>
+  // 兼容处理：确保 $ 指向 layui.jquery
+  var $ = window.jQuery || (window.layui ? layui.jquery : undefined);
+
+  var currentDetectionType = null;
+  var cameraStream = null;
+  var detectionInterval = null;
+  var videoElement = null;
+
+  // 录制相关变量
+  var mediaRecorder = null;
+  var recordedChunks = [];
+  var isRecording = false;
+  var userMediaStream = null;
+
+  // API基础URL
+  var API_BASE_URL = 'http://127.0.0.1:5001';
+
+  $(document).ready(function() {
+    console.log('=== 页面加载完成 ===');
+
+    // 检查jQuery是否可用
+    if (typeof $ === 'undefined') {
+      console.error('jQuery未加载！');
+      return;
+    }
+    // 显示公告弹窗
+     console.log('准备显示公告弹窗...');
+     setTimeout(function() {
+       console.log('开始显示公告弹窗');
+       showAnnouncementModal();
+      }, 1000);
+    // 设置全局用户名变量
+    window.currentUsername = '{{ session.username }}' || 'monitor_user';
+    console.log('当前用户:', window.currentUsername);
+
+    // 如果yoloDetector还没有加载，等待一下再检查
+    if (typeof window.yoloDetector === 'undefined') {
+
+      setTimeout(function() {
+        if (typeof window.yoloDetector === 'undefined') {
+          console.error('yoloDetector仍然未加载，请检查yolo_detector.js文件');
+          addLog('警告：yoloDetector未加载，检测功能可能不可用', 'warning');
+        } else {
+          addLog('yoloDetector加载成功', 'success');
+        }
+      }, 1000);
+    } else {
+      addLog('yoloDetector加载成功', 'success');
+    }
+
+    // 初始化模型管理
+    initModelManagement();
+
+
+
+    // 在页面右上角添加测试按钮
+    $('.page-header').append(`
+      <button class="layui-btn layui-btn-sm layui-btn-warm" onclick="testSystem()" style="float: right; margin-top: 10px; margin-right: 10px;">
+        <i class="layui-icon layui-icon-debug"></i> 调试测试
+      </button>
+      <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="testDetection()" style="float: right; margin-top: 10px; margin-right: 10px;">
+        <i class="layui-icon layui-icon-play"></i> 测试检测
+      </button>
+    `);
+
+  });
+
+  // 摄像头检测
+  async function startCameraDetection() {
+    console.log('=== 摄像头检测按钮被点击 ===');
+    const model = $('#model-select').val();
+    if (!model) {
+      layer.msg('请先选择模型');
+      return;
+    }
+    currentDetectionType = 'camera';
+    console.log('设置 currentDetectionType 为:', currentDetectionType);
+    updateDetectionStatus('摄像头检测', '启动中...', '-');
+    addLog('启动摄像头检测');
+    try {
+      const constraints = {
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        },
+        audio: true
+      };
+      userMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('摄像头权限获取成功');
+      const videoElement = document.createElement('video');
+      videoElement.srcObject = userMediaStream;
+      videoElement.autoplay = true;
+      videoElement.muted = true;
+      videoElement.style.width = '100%';
+      videoElement.style.height = '100%';
+      videoElement.style.objectFit = 'cover';
+      videoElement.id = 'camera-video';
+      $('#detect-container').html(videoElement);
+      videoElement.onloadedmetadata = function() {
+        console.log('摄像头视频加载成功');
+        console.log('摄像头启动完成，当前 currentDetectionType:', currentDetectionType);
+        updateDetectionStatus('摄像头检测', '检测中...', '-');
+        addLog('摄像头检测已启动', 'success');
+        enableRecordingButtons && enableRecordingButtons();
+        startRecording && startRecording();
+        startBackendCameraStream && startBackendCameraStream();
+        // 关键：调用公共JS的定时检测统计
+        if (typeof startPeriodicDetection === 'function') {
+          console.log('调用startPeriodicDetection，开始定时刷新检测数据');
+          startPeriodicDetection();
+        } else {
+          console.error('startPeriodicDetection未定义');
+        }
+      };
+    } catch (error) {
+      console.error('摄像头启动失败:', error);
+      let errorMsg = '摄像头启动失败';
+      if (error.name === 'NotAllowedError') {
+        errorMsg = '摄像头权限被拒绝，请允许网站访问摄像头';
+      } else if (error.name === 'NotFoundError') {
+        errorMsg = '未找到摄像头设备';
+      } else if (error.name === 'NotSupportedError') {
+        errorMsg = '浏览器不支持摄像头功能';
+      }
+      layer.msg(errorMsg, {icon: 2});
+      addLog(errorMsg, 'error');
+      updateDetectionStatus('摄像头检测', '启动失败', '-');
+    }
+  }
+
+  // 启用录制按钮
+  function enableRecordingButtons() {
+    // 可以在这里添加按钮状态变化的逻辑
+    console.log('录制按钮已启用');
+  }
+
+  // 开始录制
+  function startRecording() {
+    if (!userMediaStream) {
+      console.error('没有可用的媒体流');
+      return;
+    }
+
+    try {
+      recordedChunks = [];
+
+      const options = {
+        audioBitsPerSecond: 128000,
+        videoBitsPerSecond: 2500000,
+        mimeType: 'video/webm;codecs=vp9'
+      };
+
+      // 检查浏览器支持的格式
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options.mimeType = 'video/webm;codecs=vp8';
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options.mimeType = 'video/webm';
+        }
+      }
+
+      mediaRecorder = new MediaRecorder(userMediaStream, options);
+
+      mediaRecorder.ondataavailable = function(event) {
+        if (event.data.size > 0) {
+          recordedChunks.push(event.data);
+          console.log('录制数据片段大小:', event.data.size);
+        }
+      };
+
+      mediaRecorder.onstop = function() {
+        console.log('录制停止，总共', recordedChunks.length, '个数据片段');
+        isRecording = false;
+      };
+
+      mediaRecorder.start(1000); // 每秒生成一个数据片段
+      isRecording = true;
+      console.log('开始录制视频');
+
+    } catch (error) {
+      console.error('启动录制失败:', error);
+      addLog('启动录制失败: ' + error.message, 'error');
+    }
+  }
+
+  // 重置数据
+  function resetDetection() {
+    console.log('=== 重置数据被调用 ===');
+    console.log('重置数据时 currentDetectionType:', currentDetectionType);
+
+    const username = window.currentUsername || 'monitor_user';
+
+    layer.confirm('确定要重置当前的检测数据吗？这将清除所有累计的统计信息。', {
+      btn: ['确定', '取消'],
+      icon: 3,
+      title: '重置数据确认'
+    }, function(index) {
+      // 确定重置
+      layer.close(index);
+
+      // 显示重置中状态
+      layer.msg('正在重置数据...', {icon: 16, time: 1000});
+
+      // 调用后端重置API
+      $.ajax({
+        url: API_BASE_URL + '/api/camera/reset',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ username: username }),
+        success: function(response) {
+          if (response.success) {
+            // 清零右侧统计数据
+            $('#closed-eyes-count').text('0');
+            $('#open-mouth-count').text('0');
+            $('#open-eyes-count').text('0');
+            $('#closed-mouth-count').text('0');
+            $('#total-detections').text('0');
+            $('#fatigue-indicators').text('无');
+            $('#detection-time').text('0秒');
+
+            // 重置颜色为绿色（不疲劳）
+            $('#closed-eyes-count, #open-mouth-count, #fatigue-indicators').css('color', '#00FF00');
+            $('#open-eyes-count, #closed-mouth-count, #total-detections').css('color', '#333');
+
+            // 更新疲劳等级显示
+            if (currentDetectionType) {
+              updateDetectionStatus(currentDetectionType + '检测', '检测中...', '不疲劳');
+            }
+
+            // 如果后端建议重新启动检测流，则重新启动
+            if (response.restart_detection && currentDetectionType === 'camera') {
+              console.log('=== 重新启动摄像头检测流 ===');
+              addLog('重新启动检测流...', 'info');
+
+              // 1. 先真正停止后端检测流
+              const username = window.currentUsername || 'monitor_user';
+              $.ajax({
+                url: API_BASE_URL + '/api/detect/camera/stop',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ username: username }),
+                success: function(stopResponse) {
+                  console.log('后端检测流停止成功:', stopResponse);
+                },
+                error: function(xhr, status, error) {
+                  console.error('停止后端检测流失败:', error);
+                }
+              });
+
+              // 2. 停止前端的隐藏检测流
+              stopBackendCameraStream();
+
+              // 3. 停止定时检测
+              if (window.detectionInterval) {
+                clearInterval(window.detectionInterval);
+                window.detectionInterval = null;
+              }
+
+              // 4. 延迟2秒后重新启动，确保后端完全停止和重置
+              setTimeout(function() {
+                console.log('开始重新启动检测流...');
+
+                // 重新启动后端摄像头检测流
+                startBackendCameraStream();
+
+                // 重新启动定时检测统计
+                startPeriodicDetection();
+
+                addLog('检测流重新启动完成', 'success');
+              }, 2000);
+            }
+
+            layer.msg('数据重置成功，检测流已重新启动', {icon: 1});
+            addLog('检测数据已重置，检测流重新启动', 'success');
+
+          } else {
+            layer.msg('重置数据失败: ' + response.message, {icon: 2});
+            addLog('重置数据失败: ' + response.message, 'error');
+          }
+        },
+        error: function(xhr, status, error) {
+          layer.msg('重置数据请求失败: ' + error, {icon: 2});
+          addLog('重置数据请求失败: ' + error, 'error');
+        }
+      });
+    });
+  }
+
+  // 启动后端摄像头检测流
+  function startBackendCameraStream() {
+    console.log('=== 启动后端摄像头检测流 ===');
+
+    const model = $('#model-select').val();
+    const username = window.currentUsername || 'monitor_user';
+
+    if (!model) {
+      console.error('未选择模型');
+            return;
+          }
+
+    // 创建隐藏的img元素来接收后端检测流（但不显示）
+    const hiddenImg = document.createElement('img');
+    hiddenImg.style.display = 'none';
+    hiddenImg.id = 'backend-camera-stream';
+
+    // 设置后端摄像头流URL - 这会启动后端的检测处理
+    const streamUrl = `${API_BASE_URL}/api/stream/camera?index=0&model=${encodeURIComponent(model)}&username=${encodeURIComponent(username)}`;
+    hiddenImg.src = streamUrl;
+
+    // 添加到页面中（隐藏）
+    document.body.appendChild(hiddenImg);
+
+    console.log('后端摄像头检测流已启动:', streamUrl);
+    addLog('后端检测流已启动', 'success');
+  }
+
+  // 停止后端摄像头检测流
+  function stopBackendCameraStream() {
+    const hiddenImg = document.getElementById('backend-camera-stream');
+    if (hiddenImg) {
+      hiddenImg.src = '';
+      hiddenImg.remove();
+      console.log('后端摄像头检测流已停止');
+    }
+  }
+
+  // 开始定期检测
+  function startPeriodicDetection() {
+    console.log('=== 开始定期检测统计 ===');
+
+    if (window.detectionInterval) {
+      clearInterval(window.detectionInterval);
+    }
+
+    // 获取当前用户名
+    const username = window.currentUsername || 'monitor_user';
+
+    window.detectionInterval = setInterval(function() {
+      console.log('=== 执行定期检测请求 ===');
+
+      // 获取后端检测统计，传递用户名参数 - 通过前端代理
+      $.ajax({
+        url: API_BASE_URL + '/api/get_detected_objects',
+        type: 'GET',
+        data: { username: username },
+        timeout: 5000,
+        success: function(response) {
+          console.log('=== 获取检测统计成功 ===');
+          console.log('响应数据:', response);
+
+          if (response.success) {
+            console.log('开始更新检测统计显示...');
+            updateDetectionStats(response);
+
+            const detectionInfo = response.detection_info || {};
+            const totalDetections = detectionInfo.total_detections || 0;
+            const fatigueLevel = response.fatigue_level || 'none';
+
+            // 只在有变化时添加日志，避免刷屏
+            if (totalDetections > 0) {
+              addLog(`实时检测: ${fatigueLevel} (检测到 ${totalDetections} 个目标)`);
+            }
+        } else {
+            console.log('获取检测统计失败:', response.message || '未知错误');
+            addLog('获取检测统计失败: ' + (response.message || '未知错误'), 'warning');
+          }
+        },
+        error: function(xhr, status, error) {
+          console.error('获取检测统计请求失败:', error);
+          addLog('检测统计请求失败: ' + error, 'error');
+        }
+      });
+    }, 100); // 每0.1秒获取一次统计
+
+    console.log('定期检测已启动，间隔0.1秒');
+    addLog('定期检测统计已启动', 'success');
+  }
+
+  function updateDetectionStats(result) {
+    console.log('=== updateDetectionStats被调用 ===');
+    console.log('检测结果:', result);
+
+    var fatigueLevel = result.fatigue_level;
+    var detectionInfo = result.detection_info || {};
+
+    // 获取统计数据
+    var closedEyesCount = detectionInfo.closed_eyes_count || 0;
+    var openMouthCount = detectionInfo.open_mouth_count || 0;
+    var openEyesCount = detectionInfo.open_eyes_count || 0;
+    var closedMouthCount = detectionInfo.closed_mouth_count || 0;
+    var totalDetections = detectionInfo.total_detections || 0;
+    var totalSeconds = detectionInfo.total_seconds || 0;
+
+    // 分析疲劳指标
+    var fatigueIndicatorText = '无';
+    if (detectionInfo.fatigue_indicators && detectionInfo.fatigue_indicators.length > 0) {
+      var indicators = detectionInfo.fatigue_indicators.map(function(indicator) {
+        var typeName = {
+          'closed_eyes': '闭眼',
+          'open_mouth': '张嘴'
+        }[indicator.type] || indicator.type;
+        return typeName + '(' + indicator.count + ')';
+      });
+      fatigueIndicatorText = indicators.join(', ');
+    }
+
+    // 更新右侧固定统计区域的数据
+    $('#closed-eyes-count').text(closedEyesCount);
+    $('#open-mouth-count').text(openMouthCount);
+    $('#open-eyes-count').text(openEyesCount);
+    $('#closed-mouth-count').text(closedMouthCount);
+    $('#total-detections').text(totalDetections);
+    $('#fatigue-indicators').text(fatigueIndicatorText);
+
+    // 显示检测时长
+    var timeText = totalSeconds > 0 ? totalSeconds + '秒' : '--:--:--';
+    $('#detection-time').text(timeText);
+
+    // 根据四个疲劳等级更新统计数据的颜色
+    const fatigueColors = {
+      'severe': '#FF0000',    // 红色 - 重度疲劳
+      'moderate': '#FF8C00',  // 橙色 - 中度疲劳
+      'mild': '#FFD700',      // 黄色 - 轻度疲劳
+      'none': '#00FF00'       // 绿色 - 不疲劳
+    };
+
+    const color = fatigueColors[fatigueLevel] || '#00FF00';
+    $('#closed-eyes-count, #open-mouth-count, #fatigue-indicators').css('color', color);
+
+    // 其他统计项保持正常颜色
+    $('#open-eyes-count, #closed-mouth-count, #total-detections').css('color', '#333');
+
+    // 更新疲劳等级显示
+    const fatigueText = {
+      'severe': '重度疲劳',
+      'moderate': '中度疲劳',
+      'mild': '轻度疲劳',
+      'none': '不疲劳'
+    }[fatigueLevel] || '不疲劳';
+
+    updateDetectionStatus(currentDetectionType || '摄像头检测', '检测中...', fatigueText);
+
+    console.log('检测统计更新完成 - 闭眼:', closedEyesCount, '张嘴:', openMouthCount, '总检测:', totalDetections, '时长:', totalSeconds + '秒');
+  }
+
+  // 显示检测结果
+  function showDetectionResult(data) {
+    // 检查jQuery是否可用
+    if (typeof $ === 'undefined') {
+      console.error('jQuery未加载！');
+      return;
+    }
+
+    var container = $('#result-container');
+    var fatigueLevel = data.fatigue_level || 'low';
+    var detectionInfo = data.detection_info || {};
+
+    // 根据疲劳级别设置样式和图标
+    var badgeClass = 'layui-bg-green';
+    var icon = 'layui-icon-ok-circle';
+    var iconColor = '#5FB878';
+    var message = '';
+    var bgColor = '#f8f9fa';
+
+    if (fatigueLevel === 'high') {
+      badgeClass = 'layui-bg-red';
+      icon = 'layui-icon-close-fill';
+      iconColor = '#FF5722';
+      message = '⚠️ 请立即休息！';
+      bgColor = '#f8d7da';
+    } else if (fatigueLevel === 'medium') {
+      badgeClass = 'layui-bg-orange';
+      icon = 'layui-icon-help';
+      iconColor = '#FFB800';
+      message = '建议适当休息';
+      bgColor = '#fff3cd';
+    } else {
+      badgeClass = 'layui-bg-green';
+      icon = 'layui-icon-ok-circle';
+      iconColor = '#5FB878';
+      message = '状态正常';
+      bgColor = '#f8f9fa';
+    }
+
+    var fatigueText = {
+      'high': '高等疲劳',
+      'medium': '中等疲劳',
+      'low': '低等疲劳',
+      'normal': '低等疲劳'
+    }[fatigueLevel] || fatigueLevel;
+
+    // 统计各类检测对象的数量
+    var closedEyesCount = 0;
+    var openMouthCount = 0;
+    var openEyesCount = 0;
+    var closedMouthCount = 0;
+    var totalDetections = detectionInfo.total_objects || 0;
+
+    // 分析检测信息，统计各类对象数量
+    if (detectionInfo.objects_detected && detectionInfo.objects_detected.length > 0) {
+      detectionInfo.objects_detected.forEach(function(obj) {
+        var className = obj.class;
+        switch(className) {
+          case 'closed_eyes':
+            closedEyesCount++;
+            break;
+          case 'open_mouth':
+            openMouthCount++;
+            break;
+          case 'open_eyes':
+            openEyesCount++;
+            break;
+          case 'closed_mouth':
+            closedMouthCount++;
+            break;
+        }
+      });
+    }
+
+    // 分析疲劳指标
+    var fatigueIndicatorText = '无';
+    if (detectionInfo.fatigue_indicators && detectionInfo.fatigue_indicators.length > 0) {
+      var indicators = detectionInfo.fatigue_indicators.map(function(indicator) {
+        return {
+          'closed_eyes': '闭眼',
+          'open_mouth': '张嘴'
+        }[indicator.type] || indicator.type;
+      });
+      fatigueIndicatorText = indicators.join(', ');
+    }
+
+    // 分析检测信息
+    var detectionDetails = '';
+    if (detectionInfo.objects_detected && detectionInfo.objects_detected.length > 0) {
+      var objectCounts = {};
+      detectionInfo.objects_detected.forEach(function(obj) {
+        var className = obj.class;
+        // 将英文类名转换为中文
+        var chineseName = {
+          'closed_eyes': '闭眼',
+          'closed_mouth': '闭嘴',
+          'open_eyes': '睁眼',
+          'open_mouth': '张嘴'
+        }[className] || className;
+
+        objectCounts[chineseName] = (objectCounts[chineseName] || 0) + 1;
+      });
+
+      var objectList = Object.keys(objectCounts).map(function(name) {
+        return name + ': ' + objectCounts[name];
+      }).join(', ');
+
+      detectionDetails += `<p style="margin-top: 5px; color: #666; font-size: 12px;">检测结果: ${objectList}</p>`;
+    }
+
+    // 显示疲劳指标
+    if (detectionInfo.fatigue_indicators && detectionInfo.fatigue_indicators.length > 0) {
+      var fatigueTypes = detectionInfo.fatigue_indicators.map(function(indicator) {
+        return {
+          'closed_eyes': '闭眼',
+          'open_mouth': '张嘴'
+        }[indicator.type] || indicator.type;
+      });
+      detectionDetails += `<p style="margin-top: 5px; color: #FF5722; font-size: 12px;">疲劳指标: ${fatigueTypes.join(', ')}</p>`;
+    }
+
+    container.html(`
+      <div style="text-align: center; padding: 20px;">
+        <i class="layui-icon ${icon}" style="font-size: 48px; color: ${iconColor}; margin-bottom: 10px;"></i>
+        <div>
+        <span class="layui-badge ${badgeClass}" style="font-size: 18px; padding: 10px 20px;">${fatigueText}</span>
+        </div>
+        <p style="margin-top: 15px; color: #333; font-weight: bold;">${message}</p>
+        ${detectionDetails}
+
+        <!-- 检测统计信息 -->
+        <div class="detection-stats" style="margin-top: 20px; padding: 15px; background: ${bgColor}; border-radius: 6px; text-align: left;">
+          <h5 style="margin: 0 0 10px 0; color: #333; text-align: center;">实时检测统计</h5>
+
+          <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #666;">闭眼次数:</span>
+            <span style="color: ${fatigueLevel === 'high' ? '#FF5722' : fatigueLevel === 'medium' ? '#FFB800' : '#5FB878'}; font-weight: bold;">${closedEyesCount}</span>
+          </div>
+
+          <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #666;">张嘴次数:</span>
+            <span style="color: ${fatigueLevel === 'high' ? '#FF5722' : fatigueLevel === 'medium' ? '#FFB800' : '#5FB878'}; font-weight: bold;">${openMouthCount}</span>
+          </div>
+
+          <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #666;">睁眼次数:</span>
+            <span style="color: #5FB878; font-weight: bold;">${openEyesCount}</span>
+          </div>
+
+          <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #666;">闭嘴次数:</span>
+            <span style="color: #5FB878; font-weight: bold;">${closedMouthCount}</span>
+          </div>
+
+          <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #666;">总检测次数:</span>
+            <span style="color: #333; font-weight: bold;">${totalDetections}</span>
+          </div>
+
+          <div class="stats-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #666;">疲劳指标:</span>
+            <span style="color: ${fatigueLevel === 'high' ? '#FF5722' : fatigueLevel === 'medium' ? '#FFB800' : '#5FB878'}; font-weight: bold;">${fatigueIndicatorText}</span>
+          </div>
+
+          <div class="stats-row" style="display: flex; justify-content: space-between;">
+            <span style="color: #666;">检测时间:</span>
+            <span style="color: #999; font-size: 12px;">${new Date().toLocaleTimeString()}</span>
+          </div>
+        </div>
+
+        <p style="margin-top: 15px; color: #999; font-size: 12px;">${new Date().toLocaleString()}</p>
+      </div>
+    `);
+  }
+
+  // 更新检测状态
+  // 全局变量存储之前的状态
+  let previousDetectionState = {
+    method: '',
+    status: '',
+    fatigueLevel: ''
+  };
+
+  function updateDetectionStatus(method, status, fatigueLevel) {
+    console.log('=== updateDetectionStatus被调用 ===');
+    console.log('参数:', { method, status, fatigueLevel });
+
+    // 检查jQuery是否可用
+    if (typeof $ === 'undefined') {
+      console.error('jQuery未加载！');
+      return;
+    }
+
+    // 检查目标元素是否存在
+    const detectMethod = $('#detect-method');
+    const detectionStatus = $('#detection-status');
+    const fatigueLevelElement = $('#fatigue-level');
+
+    if (detectMethod.length === 0) {
+      console.error('找不到 #detect-method 元素');
+      return;
+    }
+    if (detectionStatus.length === 0) {
+      console.error('找不到 #detection-status 元素');
+      return;
+    }
+    if (fatigueLevelElement.length === 0) {
+      console.error('找不到 #fatigue-level 元素');
+      return;
+    }
+
+    // 保存之前的状态
+    previousDetectionState = {
+      method: detectMethod.text(),
+      status: detectionStatus.text(),
+      fatigueLevel: fatigueLevelElement.text()
+    };
+
+    console.log('保存之前的状态:', previousDetectionState);
+
+    // 强制更新元素内容，确保覆盖之前的状态
+    detectMethod.text(method || '');
+    detectionStatus.text(status || '');
+    fatigueLevelElement.text(fatigueLevel || '');
+
+    // 确保DOM更新
+    if (detectMethod[0]) detectMethod[0].innerText = method || '';
+    if (detectionStatus[0]) detectionStatus[0].innerText = status || '';
+    if (fatigueLevelElement[0]) fatigueLevelElement[0].innerText = fatigueLevel || '';
+
+    console.log('状态更新完成 - 新状态:', { method, status, fatigueLevel });
+  }
+
+  // 恢复之前的状态
+  function restorePreviousDetectionStatus() {
+    if (previousDetectionState) {
+      console.log('恢复之前的状态:', previousDetectionState);
+      updateDetectionStatus(
+        previousDetectionState.method,
+        previousDetectionState.status,
+        previousDetectionState.fatigueLevel
+      );
+    }
+  }
+
+  // 清除检测状态
+  function clearDetectionStatus() {
+    console.log('清除检测状态');
+    updateDetectionStatus('', '', '');
+  }
+
+  // 显示错误信息
+  function showError(message) {
+    layer.msg(message, {icon: 2, time: 3000});
+  }
+
+  // 添加日志
+  function addLog(message, type) {
+    // 检查jQuery是否可用
+    if (typeof $ === 'undefined') {
+      console.error('jQuery未加载！');
+      return;
+    }
+
+    var logContainer = $('#log-container');
+    console.log('log-container元素:', logContainer.length);
+
+    if (logContainer.length === 0) {
+      console.error('找不到 #log-container 元素');
+      return;
+    }
+
+    var timestamp = new Date().toLocaleTimeString();
+    var icon = 'layui-icon-time';
+    var color = '#999';
+
+    if (type === 'error') {
+      icon = 'layui-icon-close-fill';
+      color = '#FF5722';
+    } else if (type === 'success') {
+      icon = 'layui-icon-ok-circle';
+      color = '#5FB878';
+    } else if (type === 'warning') {
+      icon = 'layui-icon-help';
+      color = '#FFB800';
+    }
+
+    var logEntry = '<p><i class="layui-icon ' + icon + '" style="color: ' + color + ';"></i> [' + timestamp + '] ' + message + '</p>';
+    logContainer.append(logEntry);
+    logContainer.scrollTop(logContainer[0].scrollHeight);
+
+    console.log('日志添加完成');
+  }
+
+  // 保存检测结果到后端（可选功能）
+  function saveDetectionResult(result, method, filename) {
+    // 目前注释掉，需要时可以启用
+    /*
+    $.ajax({
+      url: '/api/save-detection-result',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        method: method,
+        filename: filename,
+        result: result
+      }),
+      success: function(response) {
+        console.log('检测结果已保存');
+      },
+      error: function(xhr, status, error) {
+        console.error('保存检测结果失败:', error);
+      }
+    });
+    */
+  }
+
+  // 测试函数
+  function testSystem() {
+    console.log('=== 开始系统测试 ===');
+
+    // 测试1: 检查jQuery是否加载
+    console.log('jQuery版本:', $.fn.jquery);
+
+    // 测试2: 检查LayUI是否加载
+    console.log('LayUI版本:', layui.v);
+
+    // 测试3: 检查yoloDetector是否加载
+    console.log('yoloDetector状态:', typeof window.yoloDetector);
+
+    // 测试4: 检查文件输入元素
+    const inputs = ['image-file', 'video-file'];
+    inputs.forEach(id => {
+      const element = $('#' + id);
+      console.log(`${id}: ${element.length > 0 ? '存在' : '不存在'}`);
+    });
+
+
+
+    startImageDetection();
+
+    console.log('=== 系统测试完成 ===');
+  }
+
+  // 测试检测功能（不需要文件）
+  function testDetection() {
+    console.log('=== 开始测试检测功能 ===');
+
+    // 检查jQuery是否可用
+    if (typeof $ === 'undefined') {
+      console.error('jQuery未加载！');
+      return;
+    }
+
+    // 立即更新状态
+    currentDetectionType = 'test';
+    updateDetectionStatus('测试检测', '检测中...', '-');
+    addLog('开始测试检测功能');
+
+    // 检查yoloDetector是否可用
+    console.log('检查yoloDetector状态:', typeof window.yoloDetector);
+    if (typeof window.yoloDetector === 'undefined') {
+      addLog('yoloDetector未加载，无法进行检测', 'error');
+      showError('yoloDetector未加载，请刷新页面重试');
+      return;
+    }
+
+    // 显示测试状态
+    const container = $('#detect-container');
+    container.html(`
+      <div style="background: #f0f9ff; color: #0369a1; padding: 20px; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+        <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 48px; margin-bottom: 15px;"></i>
+        <p>正在测试检测功能...</p>
+        <p style="font-size: 12px; margin-top: 10px;">模拟检测中</p>
+      </div>
+    `);
+
+    // 模拟检测过程
+    setTimeout(() => {
+      console.log('模拟检测完成');
+
+      // 模拟检测结果
+      const mockResult = {
+        success: true,
+        fatigue_level: 'low',
+        detection_info: {
+          total_objects: 2,
+          objects_detected: [
+            { class: 'person', confidence: 0.85 },
+            { class: 'face', confidence: 0.78 }
+          ]
+        }
+      };
+
+      // 显示结果
+      showDetectionResult(mockResult);
+      addLog('测试检测完成: ' + mockResult.fatigue_level);
+
+      // 更新显示
+      container.html(`
+        <div style="background: #f0f8ff; color: #0369a1; padding: 20px; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+          <i class="layui-icon layui-icon-ok-circle" style="font-size: 48px; margin-bottom: 15px; color: #5FB878;"></i>
+          <p>测试检测完成</p>
+          <p style="font-size: 12px; margin-top: 10px;">疲劳级别: ${mockResult.fatigue_level}</p>
+          <p style="font-size: 12px;">检测到 ${mockResult.detection_info.total_objects} 个目标</p>
+        </div>
+      `);
+
+    }, 2000);
+
+    console.log('=== 测试检测功能启动完成 ===');
+  }
+
+  // 重新加载yoloDetector脚本
+  function loadYoloDetector() {
+    return new Promise((resolve, reject) => {
+      console.log('=== 重新加载yoloDetector脚本 ===');
+
+      // 如果已经存在，先移除
+      if (window.yoloDetector) {
+        console.log('yoloDetector已存在，先清理...');
+        window.yoloDetector.destroy();
+        window.yoloDetector = null;
+      }
+
+      // 创建新的script标签
+      const script = document.createElement('script');
+      script.src = '/static/js/yolo_detector.js';
+      script.onload = function() {
+        console.log('yolo_detector.js加载成功');
+        // 等待一段时间让脚本执行
+        setTimeout(() => {
+          if (window.yoloDetector) {
+            console.log('yoloDetector初始化成功');
+            resolve();
+          } else {
+            console.error('yoloDetector初始化失败');
+            reject(new Error('yoloDetector初始化失败'));
+          }
+        }, 1000);
+      };
+      script.onerror = function() {
+        console.error('yolo_detector.js加载失败');
+        reject(new Error('yolo_detector.js加载失败'));
+      };
+
+      // 添加到页面
+      document.head.appendChild(script);
+    });
+  }
+
+  // 模型管理相关函数
+  function initModelManagement() {
+    console.log('=== 初始化模型管理 ===');
+    refreshModelList();
+  }
+
+  function refreshModelList() {
+    console.log('=== 刷新模型列表 ===');
+    $.ajax({
+      url: '/api/models',
+      type: 'GET',
+      success: function(response) {
+        if (response.success) {
+          console.log('获取模型列表成功:', response.models);
+          updateModelSelect(response.models);
+          addLog('模型列表刷新成功', 'success');
+        } else {
+          console.error('获取模型列表失败:', response.message);
+          addLog('获取模型列表失败: ' + response.message, 'error');
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error('获取模型列表请求失败:', error);
+        addLog('获取模型列表请求失败', 'error');
+      }
+    });
+  }
+
+  function updateModelSelect(models) {
+    var select = $('#model-select');
+    select.empty();
+    select.append('<option value="">请选择模型</option>');
+
+    models.forEach(function(model) {
+      var option = `<option value="${model.name}" data-size="${model.size_mb}">${model.name} (${model.size_mb}MB)</option>`;
+      select.append(option);
+    });
+
+    // 重新渲染LayUI表单
+    layui.form.render('select');
+
+    // 获取当前选中的模型
+    getCurrentModel();
+  }
+
+  function autoSelectFirstModel() {
+    console.log('=== 自动选择第一个模型 ===');
+    $.ajax({
+      url: '/api/models',
+      type: 'GET',
+      success: function(response) {
+        if (response.success && response.models.length > 0) {
+          var firstModel = response.models[0];
+          console.log('自动选择第一个模型:', firstModel.name);
+
+          // 设置选择框
+          $('#model-select').val(firstModel.name);
+          layui.form.render('select');
+
+          // 设置当前模型
+          setCurrentModel(firstModel.name);
+
+          layer.msg('已自动选择第一个模型: ' + firstModel.name, {icon: 1});
+          addLog('已自动选择模型: ' + firstModel.name, 'success');
+        } else {
+          layer.msg('没有找到可用的模型', {icon: 2});
+          addLog('没有找到可用的模型', 'warning');
+        }
+      },
+      error: function(xhr, status, error) {
+        layer.msg('获取模型列表失败', {icon: 2});
+        addLog('获取模型列表失败', 'error');
+      }
+    });
+  }
+
+  function getCurrentModel() {
+    $.ajax({
+      url: '/api/models/current',
+      type: 'GET',
+      success: function(response) {
+        if (response.success && response.current_model) {
+          console.log('当前模型:', response.current_model);
+          $('#model-select').val(response.current_model);
+          layui.form.render('select');
+          addLog('当前使用模型: ' + response.current_model, 'info');
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error('获取当前模型失败:', error);
+      }
+    });
+  }
+
+  function showModelUploadDialog() {
+    console.log('=== 显示模型上传对话框 ===');
+
+    layer.open({
+      type: 1,
+      title: '上传模型文件',
+      area: ['500px', '300px'],
+      content: `
+        <div style="padding: 20px;">
+          <form class="layui-form" id="model-upload-form">
+            <div class="layui-form-item">
+              <label class="layui-form-label">选择文件</label>
+              <div class="layui-input-block">
+                <input type="file" name="model_file" accept=".pt" class="layui-input" lay-verify="required">
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button type="button" class="layui-btn" onclick="uploadModel()">上传</button>
+                <button type="button" class="layui-btn layui-btn-primary" onclick="layer.closeAll()">取消</button>
+              </div>
+            </div>
+          </form>
+          <div style="margin-top: 20px; padding: 10px; background-color: #f5f5f5; border-radius: 4px;">
+            <p style="margin: 0; font-size: 12px; color: #666;">
+              <strong>上传说明：</strong><br>
+              • 支持格式：.pt (PyTorch模型文件)<br>
+              • 文件大小：最大500MB<br>
+              • 建议：使用经过训练的YOLO模型
+            </p>
+          </div>
+        </div>
+      `
+    });
+  }
+
+  function uploadModel() {
+    console.log('=== 开始上传模型 ===');
+    var formData = new FormData();
+    var fileInput = $('input[name="model_file"]')[0];
+
+    if (!fileInput.files[0]) {
+      layer.msg('请选择模型文件', {icon: 2});
+      return;
+    }
+
+    formData.append('model_file', fileInput.files[0]);
+
+    // 显示上传进度
+    var loadingIndex = layer.load(1, {
+      shade: [0.1, '#fff']
+    });
+
+    $.ajax({
+      url: '/api/models/upload',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(response) {
+        layer.close(loadingIndex);
+
+        if (response.success) {
+          layer.msg('模型上传成功', {icon: 1});
+          layer.closeAll();
+          refreshModelList();
+          addLog('模型上传成功: ' + response.filename, 'success');
+        } else {
+          layer.msg('模型上传失败: ' + response.message, {icon: 2});
+          addLog('模型上传失败: ' + response.message, 'error');
+        }
+      },
+      error: function(xhr, status, error) {
+        layer.close(loadingIndex);
+        layer.msg('上传请求失败', {icon: 2});
+        addLog('模型上传请求失败', 'error');
+      }
+    });
+  }
+
+  // 监听模型选择变化
+  layui.use('form', function() {
+    var form = layui.form;
+    var $ = layui.jquery;
+
+    if (typeof $ !== 'undefined') {
+      form.on('select(model-select)', function(data) {
+        console.log('=== 模型选择变化 ===');
+        console.log('选择的模型:', data.value);
+
+        if (data.value) {
+          setCurrentModel(data.value);
+        }
+      });
+    }
+  });
+
+  function setCurrentModel(modelName) {
+    console.log('=== 设置当前模型 ===');
+    console.log('模型名称:', modelName);
+
+    $.ajax({
+      url: '/api/models/current',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        model_name: modelName
+      }),
+      success: function(response) {
+        if (response.success) {
+          layer.msg('模型切换成功', {icon: 1});
+          addLog('模型切换成功: ' + modelName, 'success');
+        } else {
+          layer.msg('模型切换失败: ' + response.message, {icon: 2});
+          addLog('模型切换失败: ' + response.message, 'error');
+        }
+      },
+      error: function(xhr, status, error) {
+        layer.msg('模型切换请求失败', {icon: 2});
+        addLog('模型切换请求失败', 'error');
+      }
+    });
+  }
+
+
+
+  // 页面卸载时清理资源
+  $(document).ready(function() {
+    if (typeof $ !== 'undefined') {
+      $(window).on('beforeunload', function() {
+        if (cameraStream) {
+          cameraStream.getTracks().forEach(track => track.stop());
+        }
+        if (detectionInterval) {
+          clearInterval(detectionInterval);
+        }
+      });
+    }
+  });
+
+  // ============== 通用上传函数 =================
+  function uploadToBackend(file, extraData) {
+    const debug = true; // 调试开关
+    var model = $('#model-select').val();
+    if(!model){
+      layer.msg('请先选择模型');
+      return;
+    }
+    var formData = new FormData();
+    if(file) formData.append('file', file);
+    formData.append('model', model);
+    if(extraData && extraData.url){
+      formData.append('url', extraData.url);
+    }
+
+    if(debug){
+      console.log('[DEBUG] uploadToBackend -> 正在发送 FormData', file, extraData);
+    }
+
+    layer.msg('正在检测，请稍候...', {icon: 16, time: 0, shade: 0.3});
+    $.ajax({
+      url: '/api/detect',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(res){
+        if(debug){
+          console.log('[DEBUG] /api/detect 返回: ', res);
+        }
+        layer.closeAll();
+        if(res.success){
+          layer.msg('检测完成');
+
+          // 更新右侧统计区域（如果有统计数据）
+          if(res.detection_info){
+            updateDetectionStats(res);
+            console.log('[DEBUG] 更新检测统计:', res.detection_info);
+          }
+
+          if(res.output_path){
+            var ext = res.output_path.split('.').pop().toLowerCase();
+            if(debug){
+              console.log('[DEBUG] 解析到 output_path:', res.output_path, 'ext:', ext);
+            }
+            if(['jpg','jpeg','png','bmp','gif'].indexOf(ext) !== -1){
+              // 图片结果
+              $('#detect-container').html('<img src="' + res.output_path + '" style="max-width:100%;">');
+            }else if(['mp4','avi','mov','mkv'].indexOf(ext) !== -1){
+              // 视频结果: 直接播放推理后视频
+              const videoHtml = `<video id="resultVideo" src="${res.output_path}" controls style="max-width:100%"></video>`;
+              $('#detect-container').html(videoHtml);
+
+              // 如果是视频检测，启动定时统计更新
+              if(res.method === 'video' && res.session_id){
+                console.log('[DEBUG] 启动视频检测统计更新, session_id:', res.session_id);
+                startVideoStatsUpdate(res.session_id);
+              }
+
+              // 添加事件监听
+              const vid = document.getElementById('resultVideo');
+              if(vid){
+                vid.addEventListener('loadedmetadata', ()=>{
+                  if(debug) console.log('[DEBUG] video loadedmetadata', vid.duration, vid.videoWidth, vid.videoHeight);
+                });
+                vid.addEventListener('error', (e)=>{
+                  console.error('[DEBUG] video error', e, vid.error);
+                  layer.msg('视频播放出错，请检查控制台日志', {icon:2});
+                });
+              }
+            }else{
+              // 其他文件类型
+              $('#detect-container').html('<p>检测结果文件：<a href="' + res.output_path + '" target="_blank">点击查看</a></p>');
+            }
+          }else{
+            $('#detect-container').html('<p>检测完成，未返回结果文件。</p>');
+          }
+        }else{
+          layer.msg('检测失败: ' + res.message);
+          if(debug){ console.error('[DEBUG] 检测失败:', res.message); }
+        }
+      },
+      error: function(xhr, status, error){
+        layer.closeAll();
+        layer.msg('请求失败');
+        if(debug){ console.error('[DEBUG] ajax error', status, error); }
+      }
+    });
+  }
+
+  // // 启动视频检测统计更新
+  // function startVideoStatsUpdate(sessionId) {
+  //   console.log('[DEBUG] 启动视频检测统计更新:', sessionId);
+
+  //   // 清除之前的定时器
+  //   if (window.videoStatsInterval) {
+  //     clearInterval(window.videoStatsInterval);
+  //   }
+
+  //   // 每2秒更新一次视频统计
+  //   window.videoStatsInterval = setInterval(function() {
+  //     $.ajax({
+  //       url: '/api/get_video_stats',
+  //       type: 'GET',
+  //       data: { session_id: sessionId },
+  //       success: function(response) {
+  //         if (response.success) {
+  //           console.log('[DEBUG] 视频统计更新:', response.detection_info);
+  //           updateDetectionStats(response);
+  //         } else {
+  //           console.log('[DEBUG] 视频统计获取失败:', response.message);
+  //         }
+  //       },
+  //       error: function(xhr, status, error) {
+  //         console.error('[DEBUG] 视频统计请求失败:', error);
+  //       }
+  //     });
+  //   }, 2000);
+
+  //   // 10秒后停止更新（视频检测完成后）
+  //   setTimeout(function() {
+  //     if (window.videoStatsInterval) {
+  //       clearInterval(window.videoStatsInterval);
+  //       window.videoStatsInterval = null;
+  //       console.log('[DEBUG] 视频统计更新已停止');
+  //     }
+  //   }, 10000);
+  // }
+
+  // ============== 图片/视频按钮逻辑 =================
+  function startImageDetection(){
+    $('#detect-file').attr('accept','image/*');
+    $('#detect-file').off('change').on('change', function(){
+      if(this.files && this.files.length>0){
+        uploadToBackend(this.files[0]);
+        this.value='';
+      }
+    }).click();
+  }
+
+  function startVideoDetection(){
+    $('#detect-file').attr('accept','video/*');
+    $('#detect-file').off('change').on('change', function(){
+      if(this.files && this.files.length>0){
+        uploadToBackend(this.files[0]);
+        this.value='';
+      }
+    }).click();
+  }
+
+  // ============== 远程摄像头 ==============
+  function showRemoteCameraDialog(){
+    layer.prompt({title:'输入远程视频流 URL',formType:0},function(value, index){
+      if(!value){ layer.msg('URL 不能为空'); return; }
+      uploadToBackend(null,{url:value});
+      layer.close(index);
+    });
+  }
+
+  // ============== 摄像头实时 ==============
+  function startCameraDetection(){
+    const model = $('#model-select').val();
+    if (!model) {
+      layer.msg('请先选择模型');
+      return;
+    }
+    // 获取当前用户名
+    const username = window.currentUsername || 'monitor_user';
+    // 直接显示后端流
+    $('#detect-container').html(`<img style="max-width:100%;height:100%;object-fit:cover;" src="/api/stream/camera?index=0&model=${model}&username=${encodeURIComponent(username)}">`);
+    // 启动定时检测统计
+    startPeriodicDetection();
+  }
+
+  // 通用停止函数
+  function stopDetection(){
+    $('#detect-container').html('<div class="detect-placeholder"><i class="layui-icon layui-icon-camera" style="font-size: 64px; color: #ccc;"></i><p>请选择检测方式</p></div>');
+    // 停止定时检测统计
+    if (window.detectionInterval) {
+      clearInterval(window.detectionInterval);
+      window.detectionInterval = null;
+    }
+    // 彻底停止摄像头流：刷新页面
+    setTimeout(function(){ location.reload(); }, 200);
+  }
+
+  // 兼容旧函数名
+  function stopCameraDetection(){ stopDetection(); }
+
+  // 保存录制
+  function saveRecording() {
+    console.log('=== 保存录制按钮被点击 ===');
+
+    //       if (currentDetectionType !== 'camera') {
+    //     console.log('currentDetectionType:', currentDetectionType);
+    //     layer.msg('只有摄像头检测才能保存录制', {icon: 2});
+    //     return;
+    // }
+
+    const username = window.currentUsername || 'monitor_user';
+
+    layer.confirm('确定要保存当前录制吗？保存后将清空当前统计数据。', {
+      icon: 3,
+      title: '保存录制'
+    }, function(index) {
+      // 显示保存进度
+      const loadingIndex = layer.load(1, {
+        shade: [0.1, '#fff']
+      });
+
+      $.ajax({
+        url: '/api/camera/save_recording',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          username: username
+        }),
+        success: function(response) {
+          layer.close(loadingIndex);
+
+          if (response.success) {
+            layer.msg('录制保存成功！', {icon: 1});
+            addLog('录制保存成功，疲劳等级: ' + response.fatigue_level, 'success');
+
+            // 显示保存详情
+            const details = response.details;
+            layer.open({
+              type: 1,
+              title: '录制保存详情',
+              area: ['500px', '400px'],
+              content: `
+                <div style="padding: 20px;">
+                  <h4>检测统计</h4>
+                  <p><strong>检测时长：</strong>${details.total_seconds}秒</p>
+                  <p><strong>总检测次数：</strong>${details.total_detections}</p>
+                  <p><strong>闭眼次数：</strong>${details.closed_eyes_count} (每秒${details.closed_eyes_per_sec}次)</p>
+                  <p><strong>张嘴次数：</strong>${details.open_mouth_count} (每秒${details.open_mouth_per_sec}次)</p>
+                  <p><strong>睁眼次数：</strong>${details.open_eyes_count}</p>
+                  <p><strong>闭嘴次数：</strong>${details.closed_mouth_count}</p>
+                  <p><strong>疲劳等级：</strong><span style="color: ${getFatigueColor(response.fatigue_level)}; font-weight: bold;">${getFatigueText(response.fatigue_level)}</span></p>
+                  <div style="margin-top: 20px; text-align: center;">
+                    <button class="layui-btn" onclick="layer.closeAll()">确定</button>
+                  </div>
+                </div>
+              `
+            });
+
+          } else {
+            layer.msg('保存失败: ' + response.message, {icon: 2});
+            addLog('录制保存失败: ' + response.message, 'error');
+          }
+        },
+        error: function(xhr, status, error) {
+          layer.close(loadingIndex);
+          layer.msg('保存请求失败', {icon: 2});
+          addLog('录制保存请求失败: ' + error, 'error');
+        }
+      });
+
+      layer.close(index);
+    });
+  }
+
+  // 重置检测数据
+  function resetDetection() {
+    console.log('=== 重置检测数据按钮被点击 ===');
+
+    // if (currentDetectionType !== 'camera') {
+    //   layer.msg('只有摄像头检测才能重置数据', {icon: 2});
+    //   return;
+    // }
+
+    const username = window.currentUsername || 'monitor_user';
+
+    layer.confirm('确定要重置当前检测数据吗？所有统计将清零。', {
+      icon: 3,
+      title: '重置数据'
+    }, function(index) {
+      $.ajax({
+        url: '/api/camera/reset',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          username: username
+        }),
+        success: function(response) {
+          if (response.success) {
+            layer.msg('数据重置成功！', {icon: 1});
+            addLog('检测数据已重置', 'success');
+
+            // 清空前端显示
+            $('#closed-eyes-count').text('0');
+            $('#open-mouth-count').text('0');
+            $('#open-eyes-count').text('0');
+            $('#closed-mouth-count').text('0');
+            $('#total-detections').text('0');
+            $('#fatigue-indicators').text('无');
+            $('#detection-time').text('--:--:--');
+
+          } else {
+            layer.msg('重置失败: ' + response.message, {icon: 2});
+            addLog('数据重置失败: ' + response.message, 'error');
+          }
+        },
+        error: function(xhr, status, error) {
+          layer.msg('重置请求失败', {icon: 2});
+          addLog('数据重置请求失败: ' + error, 'error');
+        }
+      });
+
+      layer.close(index);
+    });
+  }
+
+  // 获取疲劳等级对应的颜色
+  function getFatigueColor(level) {
+    const colors = {
+      'none': '#00FF00',      // 绿色 - 不疲劳
+      'mild': '#FFD700',      // 黄色 - 轻度疲劳
+      'moderate': '#FF8C00',  // 橙色 - 中度疲劳
+      'severe': '#FF0000'     // 红色 - 重度疲劳
+    };
+    return colors[level] || '#333';
+  }
+
+  // 获取疲劳等级对应的中文文本
+  function getFatigueText(level) {
+    const texts = {
+      'none': '不疲劳',
+      'mild': '轻度疲劳',
+      'moderate': '中度疲劳',
+      'severe': '重度疲劳'
+    };
+    return texts[level] || level;
+  }
+  function initializePage() {
+    refreshModelInfo(); // driver uses refreshModelInfo
+    initializeAnnouncements();
+  }
+   // 公告相关功能
+  var announcements = [];
+  var currentAnnouncement = null;
+
+  // 显示公告弹窗
+  function showAnnouncementModal() {
+    console.log('=== showAnnouncementModal 被调用 ===');
+    // 先请求数据
+    $.ajax({
+      url: '/api/driver/announcements',
+      type: 'GET',
+      success: function(response) {
+        console.log('公告数据响应:', response);
+        if (response.success && response.data.length > 0) {
+          announcements = response.data;
+        } else {
+          announcements = [];
+        }
+        openAnnouncementLayer();
+      },
+      error: function(xhr, status, error) {
+        console.error('加载公告失败:', error);
+        announcements = [];
+        openAnnouncementLayer();
+      }
+    });
+  }
+
+  // 打开layer弹窗并渲染内容
+  function openAnnouncementLayer() {
+    var modalHtml = $('#announcement-modal').html();
+    layer.open({
+      type: 1,
+      title: '系统公告',
+      area: ['800px', '600px'],
+      content: modalHtml,
+      closeBtn: 0,
+      shadeClose: false,
+      success: function(layero, index) {
+        window.announcementModalIndex = index;
+        // 渲染公告列表和详情
+        renderAnnouncementListInLayer(layero);
+        // 绑定"确定"按钮
+        $(layero).find('.layui-btn-lg').on('click', function() {
+          layer.close(index);
+        });
+      }
+    });
+  }
+
+  // 渲染公告列表和详情（layero为弹窗jQuery对象）
+  function renderAnnouncementListInLayer(layero) {
+    var listContainer = $(layero).find('#announcement-list');
+    var contentContainer = $(layero).find('#announcement-content');
+    listContainer.empty();
+
+    if (announcements.length === 0) {
+      listContainer.html('<div style="text-align: center; padding: 40px; color: #999;">暂无公告</div>');
+      contentContainer.html('<div style="text-align: center; padding: 40px; color: #999;">暂无公告</div>');
+      return;
+    }
+
+    announcements.forEach(function(announcement, index) {
+      var announcementItem = `
+        <div class="announcement-item" data-index="${index}" style="cursor: pointer; padding: 10px; border-bottom: 1px solid #eee; transition: background-color 0.3s;">
+          <div class="announcement-title" style="font-weight: bold; margin-bottom: 5px;">${announcement.title}</div>
+          <div class="announcement-time" style="font-size: 12px; color: #999;">${formatDateTime(announcement.created_at)}</div>
+        </div>
+      `;
+      listContainer.append(announcementItem);
+    });
+
+    // 绑定点击事件
+    listContainer.find('.announcement-item').on('click', function() {
+      var index = $(this).data('index');
+      if (announcements[index]) {
+        showAnnouncementDetailInLayer(layero, announcements[index]);
+        // 高亮
+        listContainer.find('.announcement-item').removeClass('selected').css('background-color', '');
+        $(this).addClass('selected').css('background-color', '#f0f9ff');
+      }
+    });
+
+    // 默认显示第一个
+    showAnnouncementDetailInLayer(layero, announcements[0]);
+    listContainer.find('.announcement-item').eq(0).addClass('selected').css('background-color', '#f0f9ff');
+  }
+
+  // 渲染公告详情（layero为弹窗jQuery对象）
+  function showAnnouncementDetailInLayer(layero, announcement) {
+    var contentContainer = $(layero).find('#announcement-content');
+    var detailHtml = `
+      <div class="announcement-detail">
+        <h3 style="margin-bottom: 15px; color: #333;">${announcement.title}</h3>
+        <div class="announcement-meta" style="margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+          <span style="color: #666;">
+            <i class="layui-icon layui-icon-time"></i> 发布时间：${formatDateTime(announcement.created_at)}
+          </span>
+        </div>
+        <div class="announcement-body" style="line-height: 1.6; color: #333;">
+          ${announcement.content.replace(/\n/g, '<br>')}
+        </div>
+      </div>
+    `;
+    contentContainer.html(detailHtml);
+  }
+
+  // 格式化日期时间
+  function formatDateTime(timestamp) {
+    // 1. 先处理标准字符串
+    if (typeof timestamp === 'string') {
+      // 形如 '2025-07-06 17:00:00'
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(timestamp)) {
+        return timestamp;
+      }
+      // 其它字符串直接返回
+      return timestamp;
+    }
+    // 2. 处理Date对象
+    if (timestamp instanceof Date && !isNaN(timestamp.getTime())) {
+      return timestamp.getFullYear() + '-' +
+        String(timestamp.getMonth() + 1).padStart(2, '0') + '-' +
+        String(timestamp.getDate()).padStart(2, '0') + ' ' +
+        String(timestamp.getHours()).padStart(2, '0') + ':' +
+        String(timestamp.getMinutes()).padStart(2, '0') + ':' +
+        String(timestamp.getSeconds()).padStart(2, '0');
+    }
+    // 3. 其它情况直接返回
+    return timestamp;
+  }
+</script>
+{% endblock %} 

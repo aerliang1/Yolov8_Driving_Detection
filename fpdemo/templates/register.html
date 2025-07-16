@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>用户注册</title>
+  <link rel="stylesheet" href="/static/css/layui.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-image: url('/static/images/bg.jpg'); /* 使用本地背景图 */
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .register-box {
+      width: 400px;
+      background-color: #fff;
+      border-radius: 6px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .register-header {
+      background-color: #009688;
+      color: #fff;
+      text-align: center;
+      padding: 15px 0;
+      font-size: 18px;
+    }
+
+    .register-form {
+      padding: 30px;
+    }
+
+    /* 核心优化：减少标签左侧空白 */
+    .layui-form-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .layui-form-label {
+      width: 70px;           /* 减少标签宽度 */
+      text-align: right;
+      padding-right: 15px;   /* 调整标签与输入框的间距 */
+      white-space: nowrap;
+    }
+
+    .layui-input-block {
+      flex: 1;               /* 输入框自动占满剩余空间 */
+      margin-left: 0;        /* 清除默认边距 */
+    }
+
+    .layui-btn {
+      width: 100%;
+      background-color: #009688;
+      border: none;
+    }
+
+    .login-btn {
+      width: 100%;
+      background-color: #fff;
+      color: #666;
+      border: 1px solid #e6e6e6;
+      margin-top: 10px;
+    }
+
+    .login-btn:hover {
+      color: #009688;
+      border-color: #009688;
+    }
+  </style>
+</head>
+<body>
+  <div class="register-box">
+    <div class="register-header">用户注册</div>
+    <div class="register-form">
+      <form class="layui-form" action="/register" method="post">
+        <div class="layui-form-item">
+          <label class="layui-form-label">用户名</label>
+          <div class="layui-input-block">
+            <input type="text" name="username" required lay-verify="required" placeholder="用户名" autocomplete="off" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">密码</label>
+          <div class="layui-input-block">
+            <input type="password" name="password" required lay-verify="required" placeholder="密码" autocomplete="off" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">确认密码</label>
+          <div class="layui-input-block">
+            <input type="password" name="confirm_password" required lay-verify="required" placeholder="请再次输入密码" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">角色</label>
+          <div class="layui-input-block">
+            <select name="role" class="layui-input">
+              <option value="driver">驾驶员</option>
+              <option value="monitor">监控人员</option>
+              <option value="admin">管理员</option>
+            </select>
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <div class="layui-input-block">
+            <button class="layui-btn" type="submit">注册</button>
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <div class="layui-input-block">
+            <a href="/login" class="layui-btn login-btn">已有账号？前往登录</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="/static/layui.js"></script>
+  <script>
+    layui.use('form', function() {
+      var form = layui.form;
+      form.on('submit(formDemo)', function(data) {
+        return true;
+      });
+    });
+  </script>
+</body>
+</html>

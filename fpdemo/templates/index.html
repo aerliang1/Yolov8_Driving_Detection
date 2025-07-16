@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>疲劳驾驶检测系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .status {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .status-title {
+            color: #2e7d32;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .status-info {
+            color: #388e3c;
+            font-size: 14px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+            margin: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+        
+        .version {
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .features {
+            text-align: left;
+            margin: 20px 0;
+        }
+        
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .features li {
+            padding: 5px 0;
+            color: #555;
+        }
+        
+        .features li:before {
+            content: "✓ ";
+            color: #4caf50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚗</div>
+        <h1>疲劳驾驶检测系统</h1>
+        <p class="subtitle">基于AI深度学习的智能检测平台</p>
+        
+        <div class="status">
+            <div class="status-title">✅ 系统状态正常</div>
+            <div class="status-info">前端服务已启动，Docker环境运行正常</div>
+        </div>
+        
+        <div class="features">
+            <h3 style="color: #333; margin-bottom: 15px;">系统功能</h3>
+            <ul>
+                <li>实时摄像头疲劳检测</li>
+                <li>图片和视频文件检测</li>
+                <li>多角色权限管理</li>
+                <li>检测记录统计分析</li>
+                <li>AI模型智能识别</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <a href="/login" class="btn">立即登录</a>
+            <a href="/register" class="btn btn-secondary">用户注册</a>
+        </div>
+        
+        <div class="version">
+            版本 2.0 | Docker部署版本<br>
+            访问时间: <span id="current-time"></span>
+        </div>
+    </div>
+    
+    <script>
+        // 显示当前时间
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleString('zh-CN');
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // 检查后端连接状态
+        fetch('/health')
+            .then(response => response.json())
+            .then(data => {
+                console.log('前端健康检查:', data);
+            })
+            .catch(error => {
+                console.log('健康检查失败:', error);
+            });
+    </script>
+</body>
+</html>

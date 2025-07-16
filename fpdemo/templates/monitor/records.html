@@ -1,0 +1,229 @@
+{% extends "common/base.html" %}
+
+{% block title %}检测记录 - 监控人员{% endblock %}
+
+{% block sidebar %}
+<ul class="layui-nav layui-nav-tree">
+  <li class="layui-nav-item">
+    <a href="/monitor/dashboard">
+      <i class="layui-icon layui-icon-camera"></i> 检测中心
+    </a>
+  </li>
+  <li class="layui-nav-item layui-this">
+    <a href="/monitor/records">
+      <i class="layui-icon layui-icon-list"></i> 检测记录
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/monitor/profile">
+      <i class="layui-icon layui-icon-user"></i> 个人信息
+    </a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">检测记录管理</h1>
+  <p style="margin: 10px 0 0 0; color: #666;">查看和管理所有检测记录</p>
+</div>
+
+<div class="content-card">
+  <div class="content-header">
+    <i class="layui-icon layui-icon-list"></i> 检测记录
+    <div style="float: right;">
+      <button class="layui-btn layui-btn-sm" id="refresh-records">
+        <i class="layui-icon layui-icon-refresh"></i> 刷新
+      </button>
+    </div>
+  </div>
+  <div class="content-body">
+    <table class="layui-table" id="records-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>驾驶员</th>
+          <th>检测时间</th>
+          <th>检测方式</th>
+          <th>检测情况</th>
+          <th>疲劳程度</th>
+          <th>处理状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="records-tbody">
+        {% if records and records|length > 0 %}
+          {% for record in records %}
+          <tr>
+            <td>{{ record.id }}</td>
+            <td>{{ record.username or '未知' }}</td>
+            <td>{{ record.timestamp if record.timestamp else '未知' }}</td>
+            <td>
+              {% if record.method == 'image' %}图片检测
+              {% elif record.method == 'video' %}视频检测
+              {% elif record.method == 'camera' %}摄像头检测
+              {% elif record.method == 'remote' %}远程摄像头
+              {% else %}{{ record.method }}
+              {% endif %}
+            </td>
+            <td>
+              {% if record.result != 'fatigue' %}
+                <span class="layui-badge layui-bg-green">正常检测</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if record.fatigue_level == 'mild' %}
+                <span class="layui-badge layui-bg-green">低等疲劳</span>
+              {% elif record.fatigue_level == 'moderate' %}
+                <span class="layui-badge layui-bg-orange">中等疲劳</span>
+              {% elif record.fatigue_level == 'severe' %}
+                <span class="layui-badge layui-bg-red">高等疲劳</span>
+              {% else %}
+                <span class="layui-badge layui-bg-blue">正常</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if record.status == 'pending' %}
+                <span class="layui-badge layui-bg-gray">待处理</span>
+              {% elif record.status == 'completed' %}
+                <span class="layui-badge layui-bg-green">已完成</span>
+              {% elif record.status == 'processed' %}
+                <span class="layui-badge layui-bg-green">已处理</span>
+              {% elif record.status == 'ignored' %}
+                <span class="layui-badge layui-bg-orange">已忽略</span>
+              {% else %}
+                <span class="layui-badge">未知</span>
+              {% endif %}
+            </td>
+            <td>
+              <button class="layui-btn layui-btn-xs view-record-btn" data-id="{{ record.id }}">
+                <i class="layui-icon layui-icon-search"></i> 查看
+              </button>
+               <button class="layui-btn layui-btn-xs edit-record-btn layui-bg-blue" data-id="{{ record.id }}">
+                <i class="layui-icon layui-icon-edit"></i> 修改
+              </button>
+              <button class="layui-btn layui-btn-xs layui-btn-danger delete-record-btn" data-id="{{ record.id }}">
+                <i class="layui-icon layui-icon-delete"></i> 删除
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
+              <i class="layui-icon layui-icon-face-cry" style="font-size: 48px; margin-bottom: 10px; display: block;"></i>
+              暂无检测记录
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+  $(document).ready(function() {
+    // 刷新按钮点击事件
+    $('#refresh-records').on('click', function() {
+      location.reload();
+    });
+
+    // 查看记录按钮事件绑定
+    $(document).on('click', '.view-record-btn', function() {
+      var recordId = $(this).data('id');
+      layer.msg('查看记录功能开发中...', {icon: 1});
+    });
+
+    // 删除记录按钮事件绑定 - 监控人员版本
+    $(document).on('click', '.delete-record-btn', function() {
+      var recordId = $(this).data('id');
+      layer.confirm('确定要删除这条记录吗？', {
+        btn: ['确定', '取消']
+      }, function(index) {
+        $.ajax({
+          url: '/api/monitor/records/' + recordId,
+          type: 'DELETE',
+          success: function(response) {
+            if (response.success) {
+              layer.msg('记录删除成功', {icon: 1});
+              location.reload();
+            } else {
+              layer.msg('删除失败：' + response.message, {icon: 2});
+            }
+          },
+          error: function() {
+            layer.msg('删除失败，请稍后重试', {icon: 2});
+          }
+        });
+        layer.close(index);
+      });
+    });
+
+    // 修改记录按钮事件绑定 - 使用 Layui 表单美化下拉框
+    $(document).on('click', '.edit-record-btn', function() {
+      var recordId = $(this).data('id');
+      // 使用 Layui 表单美化下拉框
+      var html = `
+        <form class="layui-form" lay-filter="fatigueForm" style="padding:20px 30px 10px 20px;">
+          <div class="layui-form-item">
+            <label class="layui-form-label">疲劳程度</label>
+            <div class="layui-input-block">
+              <select id="fatigue-select" name="fatigue_level" lay-verify="required">
+                <option value="正常">正常</option>
+                <option value="低等疲劳">低等疲劳</option>
+                <option value="中等疲劳">中等疲劳</option>
+                <option value="高等疲劳">高等疲劳</option>
+              </select>
+            </div>
+          </div>
+        </form>`;
+
+      layer.open({
+        type: 1,
+        title: '请选择新的疲劳程度',
+        area: ['360px', '240px'],
+        content: html,
+        success: function(){
+          layui.use(['form'], function(){
+            var form = layui.form;
+            form.render('select', 'fatigueForm');
+          });
+        },
+        btn: ['确定', '取消'],
+        yes: function(index) {
+          var cnLevel = $('#fatigue-select').val();
+          // 中→英映射
+          var mapping = {
+            '正常': 'normal',
+            '低等疲劳': 'mild',
+            '中等疲劳': 'moderate',
+            '高等疲劳': 'severe'
+          };
+          var enLevel = mapping[cnLevel] || 'normal';
+
+          $.ajax({
+            url: '/api/monitor/records/' + recordId + '/fatigue-level',
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({fatigue_level: enLevel}),
+            success: function(response) {
+              if (response.success) {
+                layer.msg('修改成功', {icon: 1});
+                location.reload();
+              } else {
+                layer.msg('修改失败：' + response.message, {icon: 2});
+              }
+            },
+            error: function() {
+              layer.msg('修改失败，请稍后重试', {icon: 2});
+            }
+          });
+          layer.close(index);
+        }
+      });
+    });
+  });
+
+{% endblock %} 

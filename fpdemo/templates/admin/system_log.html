@@ -1,0 +1,335 @@
+{% extends "common/base.html" %}
+
+{% block title %}系统日志 - 管理员{% endblock %}
+
+{% block sidebar %}
+<ul class="layui-nav layui-nav-tree">
+  <li class="layui-nav-item">
+    <a href="/admin/dashboard">
+      <i class="layui-icon layui-icon-console"></i> 控制台
+    </a>
+  </li>
+  <li class="layui-nav-item layui-this">
+    <a href="/admin/system_log">
+      <i class="layui-icon layui-icon-log"></i> 系统日志
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/permissions">
+      <i class="layui-icon layui-icon-user"></i> 权限管理
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/records">
+      <i class="layui-icon layui-icon-list"></i> 检测记录
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/profile">
+      <i class="layui-icon layui-icon-set"></i> 个人信息
+    </a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">系统日志</h1>
+  <p style="margin: 10px 0 0 0; color: #666;">查看系统操作日志和活动记录</p>
+</div>
+
+<div class="content-card">
+  <div class="content-header">
+    <i class="layui-icon layui-icon-log"></i> 系统日志
+    <div style="float: right;">
+      <button class="layui-btn layui-btn-sm" id="refresh-logs">
+        <i class="layui-icon layui-icon-refresh"></i> 刷新
+      </button>
+      <button class="layui-btn layui-btn-sm layui-btn-normal" id="export-logs">
+        <i class="layui-icon layui-icon-export"></i> 导出
+      </button>
+      <button class="layui-btn layui-btn-sm layui-btn-danger" id="clear-logs">
+        <i class="layui-icon layui-icon-delete"></i> 清空
+      </button>
+    </div>
+  </div>
+  <div class="content-body">
+    <!-- 搜索筛选 -->
+    <div class="layui-form" style="margin-bottom: 20px;">
+      <div class="layui-row layui-col-space10">
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <label class="layui-form-label">用户角色</label>
+            <div class="layui-input-block">
+              <select name="role-filter" id="role-filter">
+                <option value="">全部</option>
+                <option value="driver">驾驶员</option>
+                <option value="monitor">监控人员</option>
+                <option value="admin">管理员</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <label class="layui-form-label">操作类型</label>
+            <div class="layui-input-block">
+              <select name="action-filter" id="action-filter">
+                <option value="">全部</option>
+                <option value="用户登录">用户登录</option>
+                <option value="用户退出登录">用户退出登录</option>
+                <option value="用户注册">用户注册</option>
+                <option value="执行图片检测">执行图片检测</option>
+                <option value="执行视频检测">执行视频检测</option>
+                <option value="执行摄像头检测">执行摄像头检测</option>
+                <option value="用户上传文件">用户上传文件</option>
+                <option value="添加用户">添加用户</option>
+                <option value="修改用户角色">修改用户角色</option>
+                <option value="删除用户">删除用户</option>
+                <option value="修改密码">修改密码</option>
+                <option value="修改用户名">修改用户名</option>
+                <option value="清空系统日志">清空系统日志</option>
+                <option value="导出系统日志">导出系统日志</option>
+                <option value="上传模型文件">上传模型文件</option>
+                <option value="删除模型文件">删除模型文件</option>
+                <option value="切换模型">切换模型</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <label class="layui-form-label">时间范围</label>
+            <div class="layui-input-block">
+              <input type="text" name="date-range" id="date-range" placeholder="选择时间范围" class="layui-input">
+            </div>
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button class="layui-btn" id="search-btn">
+                <i class="layui-icon layui-icon-search"></i> 搜索
+              </button>
+              <button class="layui-btn layui-btn-primary" id="reset-btn">
+                <i class="layui-icon layui-icon-refresh-1"></i> 重置
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 日志表格 -->
+    <table class="layui-table" id="logs-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>用户名</th>
+          <th>角色</th>
+          <th>操作</th>
+          <th>详情</th>
+          <th>IP地址</th>
+          <th>时间</th>
+        </tr>
+      </thead>
+      <tbody id="logs-tbody">
+        <!-- 数据将通过JavaScript动态加载 -->
+      </tbody>
+    </table>
+
+    <div id="no-logs" style="text-align: center; padding: 40px; color: #999; display: none;">
+      <i class="layui-icon layui-icon-face-smile" style="font-size: 48px; margin-bottom: 10px;"></i>
+      <p>暂无系统日志</p>
+    </div>
+
+    <div id="loading" style="text-align: center; padding: 40px;">
+      <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i>
+      <p>加载中...</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+layui.use(['element', 'layer', 'form', 'laydate'], function() {
+  var element = layui.element;
+  var layer = layui.layer;
+  var form = layui.form;
+  var laydate = layui.laydate;
+  var $ = layui.jquery;
+
+  // 页面加载完成后执行
+  loadLogs();
+
+  // 初始化日期选择器
+  laydate.render({
+    elem: '#date-range',
+    type: 'datetime',
+    range: true,
+    format: 'yyyy-MM-dd HH:mm:ss'
+  });
+
+  // 刷新日志
+  $('#refresh-logs').on('click', function() {
+    loadLogs();
+  });
+
+  // 搜索按钮
+  $('#search-btn').on('click', function() {
+    loadLogs();
+  });
+
+  // 重置按钮
+  $('#reset-btn').on('click', function() {
+    $('#role-filter').val('');
+    $('#action-filter').val('');
+    $('#date-range').val('');
+    form.render('select');
+    loadLogs();
+  });
+
+  // 导出日志
+  $('#export-logs').on('click', function() {
+    exportLogs();
+  });
+
+  // 清空日志
+  $('#clear-logs').on('click', function() {
+    showConfirm('确定要清空所有系统日志吗？此操作不可恢复！', function() {
+      $.ajax({
+        url: '/api/admin/logs/clear',
+        type: 'DELETE',
+        success: function(response) {
+          if (response.success) {
+            showSuccess('系统日志清空成功');
+            loadLogs();
+          } else {
+            showError('系统日志清空失败：' + response.message);
+          }
+        },
+        error: function(xhr, status, error) {
+          showError('系统日志清空失败：' + error);
+        }
+      });
+    });
+  });
+
+  function loadLogs() {
+    $('#loading').show();
+    $('#logs-tbody').empty();
+    $('#no-logs').hide();
+
+    var params = {
+      role: $('#role-filter').val(),
+      action: $('#action-filter').val(),
+      date_range: $('#date-range').val()
+    };
+
+    $.ajax({
+      url: '/api/admin/logs',
+      type: 'GET',
+      data: params,
+      success: function(response) {
+        $('#loading').hide();
+
+        if (response.success && response.data.length > 0) {
+          renderLogs(response.data);
+        } else {
+          $('#no-logs').show();
+        }
+      },
+      error: function(xhr, status, error) {
+        $('#loading').hide();
+        showError('加载日志失败：' + error);
+        $('#no-logs').show();
+      }
+    });
+  }
+
+  function renderLogs(logs) {
+    var tbody = $('#logs-tbody');
+    tbody.empty();
+
+    logs.forEach(function(log) {
+      var row = $('<tr>');
+      row.append('<td>' + log.id + '</td>');
+      row.append('<td>' + log.username + '</td>');
+      row.append('<td>' + getRoleBadge(log.role) + '</td>');
+      row.append('<td>' + getActionBadge(log.action) + '</td>');
+      row.append('<td>' + (log.details || '-') + '</td>');
+      row.append('<td>' + (log.ip_address || '-') + '</td>');
+      row.append('<td>' + formatDateTime(log.timestamp) + '</td>');
+
+      tbody.append(row);
+    });
+  }
+
+  function getRoleBadge(role) {
+    var badges = {
+      'driver': '<span class="layui-badge layui-bg-blue">驾驶员</span>',
+      'monitor': '<span class="layui-badge layui-bg-green">监控人员</span>',
+      'admin': '<span class="layui-badge layui-bg-red">管理员</span>'
+    };
+    return badges[role] || '<span class="layui-badge">未知</span>';
+  }
+
+  function getActionBadge(action) {
+    var badges = {
+      '用户登录': '<span class="layui-badge" style="background-color: #16baaa;">登录</span>',
+      '用户退出登录': '<span class="layui-badge" style="background-color: #16baaa;">退出</span>',
+      '用户注册': '<span class="layui-badge" style="background-color: #16baaa;">注册</span>',
+      '执行图片检测': '<span class="layui-badge" style="background-color: #16baaa;">图片检测</span>',
+      '执行视频检测': '<span class="layui-badge" style="background-color: #16baaa;">视频检测</span>',
+      '执行摄像头检测': '<span class="layui-badge" style="background-color: #16baaa;">摄像头检测</span>',
+      '用户上传文件': '<span class="layui-badge" style="background-color: #16baaa;">文件上传</span>',
+      '添加用户': '<span class="layui-badge" style="background-color: #16baaa;">添加用户</span>',
+      '修改用户角色': '<span class="layui-badge" style="background-color: #16baaa;">修改角色</span>',
+      '删除用户': '<span class="layui-badge" style="background-color: #16baaa;">删除用户</span>',
+      '修改密码': '<span class="layui-badge" style="background-color: #16baaa;">修改密码</span>',
+      '修改用户名': '<span class="layui-badge" style="background-color: #16baaa;">修改用户名</span>',
+      '清空系统日志': '<span class="layui-badge" style="background-color: #16baaa;">清空日志</span>',
+      '导出系统日志': '<span class="layui-badge" style="background-color: #16baaa;">导出日志</span>',
+      '上传模型文件': '<span class="layui-badge" style="background-color: #16baaa;">上传模型</span>',
+      '删除模型文件': '<span class="layui-badge" style="background-color: #16baaa;">删除模型</span>',
+      '切换模型': '<span class="layui-badge" style="background-color: #16baaa;">切换模型</span>'
+    };
+    return badges[action] || '<span class="layui-badge" style="background-color: #16baaa;">' + action + '</span>';
+  }
+
+  function formatDateTime(timestamp) {
+    if (!timestamp) return '-';
+    var date = new Date(timestamp);
+    if (isNaN(date.getTime())) return timestamp; // 如果解析失败，直接返回原值
+
+    return date.getFullYear() + '-' +
+           String(date.getMonth() + 1).padStart(2, '0') + '-' +
+           String(date.getDate()).padStart(2, '0') + ' ' +
+           String(date.getHours()).padStart(2, '0') + ':' +
+           String(date.getMinutes()).padStart(2, '0') + ':' +
+           String(date.getSeconds()).padStart(2, '0');
+  }
+
+  function exportLogs() {
+    var params = {
+      role: $('#role-filter').val(),
+      action: $('#action-filter').val(),
+      date_range: $('#date-range').val()
+    };
+
+    var queryString = $.param(params);
+    var downloadUrl = '/api/admin/logs/export?' + queryString;
+
+    // 创建一个隐藏的下载链接
+    var link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'system_logs.csv';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showSuccess('日志导出已开始，请稍后查看下载文件');
+  }
+});
+{% endblock %}

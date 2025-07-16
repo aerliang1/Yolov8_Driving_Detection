@@ -1,0 +1,376 @@
+
+{% extends "common/base.html" %}
+
+{% block title %}检测记录 - 管理员{% endblock %}
+
+{% block sidebar %}
+<ul class="layui-nav layui-nav-tree">
+  <li class="layui-nav-item">
+    <a href="/admin/dashboard">
+      <i class="layui-icon layui-icon-console"></i> 控制台
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/system_log">
+      <i class="layui-icon layui-icon-log"></i> 系统日志
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/permissions">
+      <i class="layui-icon layui-icon-user"></i> 权限管理
+    </a>
+  </li>
+  <li class="layui-nav-item layui-this">
+    <a href="/admin/records">
+      <i class="layui-icon layui-icon-list"></i> 检测记录
+    </a>
+  </li>
+  <li class="layui-nav-item">
+    <a href="/admin/profile">
+      <i class="layui-icon layui-icon-set"></i> 个人信息
+    </a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">检测记录管理</h1>
+  <p style="margin: 10px 0 0 0; color: #666;">查看和管理所有检测记录</p>
+</div>
+
+<div class="content-card">
+  <div class="content-header">
+    <i class="layui-icon layui-icon-list"></i> 检测记录
+    <div style="float: right;">
+      <button class="layui-btn layui-btn-sm" id="refresh-records">
+        <i class="layui-icon layui-icon-refresh"></i> 刷新
+      </button>
+    </div>
+  </div>
+  <div class="content-body">
+    <!-- 搜索筛选 -->
+    <div class="layui-form" style="margin-bottom: 20px;">
+      <div class="layui-row layui-col-space10">
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <label class="layui-form-label">检测结果</label>
+            <div class="layui-input-block">
+              <select name="result-filter" id="result-filter">
+                <option value="">全部</option>
+                <option value="normal">正常</option>
+                <option value="fatigue">疲劳</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <label class="layui-form-label">驾驶员</label>
+            <div class="layui-input-block">
+              <input type="text" id="driver-filter" placeholder="输入驾驶员用户名" class="layui-input">
+            </div>
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <label class="layui-form-label">时间范围</label>
+            <div class="layui-input-block">
+              <input type="text" id="date-range" placeholder="选择时间范围" class="layui-input">
+            </div>
+          </div>
+        </div>
+        <div class="layui-col-md3">
+          <div class="layui-form-item">
+            <div class="layui-input-block">
+              <button class="layui-btn" id="search-btn">
+                <i class="layui-icon layui-icon-search"></i> 搜索
+              </button>
+              <button class="layui-btn layui-btn-primary" id="reset-btn">
+                <i class="layui-icon layui-icon-refresh-1"></i> 重置
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <table class="layui-table" id="records-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>驾驶员</th>
+          <th>检测时间</th>
+          <th>检测方式</th>
+          <th>检测情况</th>
+          <th>疲劳程度</th>
+          <th>处理状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="records-tbody">
+        <!-- 数据将通过JavaScript动态加载 -->
+      </tbody>
+    </table>
+
+    <div id="no-records" style="text-align: center; padding: 40px; color: #999; display: none;">
+      <i class="layui-icon layui-icon-face-cry" style="font-size: 48px; margin-bottom: 10px;"></i>
+      <p>暂无检测记录</p>
+    </div>
+
+    <div id="loading" style="text-align: center; padding: 40px;">
+      <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i>
+      <p>加载中...</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+layui.use(['layer', 'form', 'laydate'], function() {
+  var layer = layui.layer;
+  var form = layui.form;
+  var laydate = layui.laydate;
+  var $ = layui.jquery;
+
+  // 辅助函数
+  function showConfirm(message, callback) {
+    layer.confirm(message, {
+      icon: 3,
+      title: '确认操作'
+    }, function(index) {
+      callback();
+      layer.close(index);
+    });
+  }
+
+  // 使用全局的showConfirm函数，添加调试信息
+  var originalShowConfirm = window.showConfirm;
+  window.showConfirm = function(message, callback) {
+    console.log('🔍 显示确认对话框，消息:', message);
+    originalShowConfirm(message, function() {
+      console.log('✅ 用户点击确认');
+      if (callback) callback();
+    });
+  };
+
+  function showSuccess(message) {
+    layer.msg(message, {icon: 1});
+  }
+
+  function showError(message) {
+    layer.msg(message, {icon: 2});
+  }
+
+  // 页面加载完成后执行
+  loadRecords();
+
+  // 初始化日期选择器
+  laydate.render({
+    elem: '#date-range',
+    type: 'datetime',
+    range: true,
+    format: 'yyyy-MM-dd HH:mm:ss'
+  });
+
+  // 刷新按钮点击事件
+  $('#refresh-records').on('click', function() {
+    loadRecords();
+  });
+
+  // 搜索按钮
+  $('#search-btn').on('click', function() {
+    loadRecords();
+  });
+
+  // 重置按钮
+  $('#reset-btn').on('click', function() {
+    $('#result-filter').val('');
+    $('#driver-filter').val('');
+    $('#date-range').val('');
+    form.render('select');
+    loadRecords();
+  });
+
+  function loadRecords() {
+    $('#loading').show();
+    $('#records-tbody').empty();
+    $('#no-records').hide();
+
+    var params = {
+      result: $('#result-filter').val(),
+      driver_id: $('#driver-filter').val(),
+      date_range: $('#date-range').val()
+    };
+
+    $.ajax({
+      url: '/api/records',
+      type: 'GET',
+      data: params,
+      success: function(response) {
+        $('#loading').hide();
+
+        if (response.success && response.data.length > 0) {
+          renderRecords(response.data);
+        } else {
+          $('#no-records').show();
+        }
+      },
+      error: function(xhr, status, error) {
+        $('#loading').hide();
+        showError('加载记录失败：' + error);
+        $('#no-records').show();
+      }
+    });
+  }
+
+  function renderRecords(records) {
+    var tbody = $('#records-tbody');
+    tbody.empty();
+
+    records.forEach(function(record) {
+      var row = $('<tr>');
+      row.append('<td>' + record.id + '</td>');
+      row.append('<td>' + (record.username || '未知') + '</td>');
+      row.append('<td>' + (record.timestamp || '未知') + '</td>');
+      row.append('<td>' + getMethodName(record.method) + '</td>');
+      row.append('<td>' + getResultBadge(record.result) + '</td>');
+      row.append('<td>' + getFatigueBadge(record.fatigue_level) + '</td>');
+      row.append('<td>' + getStatusBadge(record.status) + '</td>');
+
+      var actionButtons = '<div class="layui-btn-group">';
+      actionButtons += '<button class="layui-btn layui-btn-xs view-record-btn" data-id="' + record.id + '">';
+      actionButtons += '<i class="layui-icon layui-icon-search"></i> 查看</button>';
+      actionButtons += '<button class="layui-btn layui-btn-xs edit-record-btn layui-bg-blue" data-id="' + record.id + '">';
+      actionButtons += '<i class="layui-icon layui-icon-edit"></i> 修改</button>';
+      actionButtons += '<button class="layui-btn layui-btn-xs layui-btn-danger delete-record-btn" data-id="' + record.id + '">';
+      actionButtons += '<i class="layui-icon layui-icon-delete"></i> 删除</button>';
+      actionButtons += '</div>';
+
+      row.append('<td>' + actionButtons + '</td>');
+      tbody.append(row);
+    });
+  }
+
+  function getMethodName(method) {
+    var methodNames = {
+      'image': '图片检测',
+      'video': '视频检测',
+      'camera': '摄像头检测',
+      'remote': '远程摄像头'
+    };
+    return methodNames[method] || method;
+  }
+
+  function getResultBadge(result) {
+    if (result === 'fatigue') {
+      return '<span class="layui-badge layui-bg-red">疲劳检测</span>';
+    } else {
+      return '<span class="layui-badge layui-bg-green">正常检测</span>';
+    }
+  }
+
+  function getFatigueBadge(fatigue_level) {
+    var badges = {
+      'normal': '<span class="layui-badge layui-bg-blue">正常</span>',
+      'mild': '<span class="layui-badge layui-bg-green">低等疲劳</span>',
+      'moderate': '<span class="layui-badge layui-bg-orange">中等疲劳</span>',
+      'severe': '<span class="layui-badge layui-bg-red">高等疲劳</span>'
+    };
+    return badges[fatigue_level] || '<span class="layui-badge layui-bg-blue">正常</span>';
+  }
+
+  function getStatusBadge(status) {
+    var badges = {
+      'pending': '<span class="layui-badge layui-bg-gray">待处理</span>',
+      'completed': '<span class="layui-badge layui-bg-green">已完成</span>',
+      'processed': '<span class="layui-badge layui-bg-green">已处理</span>',
+      'ignored': '<span class="layui-badge layui-bg-orange">已忽略</span>'
+    };
+    return badges[status] || '<span class="layui-badge">未知</span>';
+  }
+
+  // 查看记录按钮事件绑定
+  $(document).on('click', '.view-record-btn', function() {
+    var recordId = $(this).data('id');
+    layer.msg('查看记录功能开发中...', {icon: 1});
+  });
+
+  // 删除记录按钮事件绑定
+  $(document).on('click', '.delete-record-btn', function() {
+    var recordId = $(this).data('id');
+    showConfirm('确定要删除这条记录吗？此操作不可恢复！', function() {
+      $.ajax({
+        url: '/api/records/' + recordId,
+        type: 'DELETE',
+        success: function(response) {
+          if (response.success) {
+            showSuccess('记录删除成功');
+            loadRecords();
+          } else {
+            showError('删除失败：' + response.message);
+          }
+        },
+        error: function(xhr, status, error) {
+          showError('删除失败：' + error);
+        }
+      });
+    });
+  });
+
+  // 修改记录按钮事件绑定
+  $(document).on('click', '.edit-record-btn', function() {
+    var recordId = $(this).data('id');
+    var html = `
+      <form class="layui-form" lay-filter="fatigueForm" style="padding:20px 30px 10px 20px;">
+        <div class="layui-form-item">
+          <label class="layui-form-label">疲劳程度</label>
+          <div class="layui-input-block">
+            <select id="fatigue-select" name="fatigue_level" lay-verify="required">
+              <option value="normal">正常</option>
+              <option value="mild">低等疲劳</option>
+              <option value="moderate">中等疲劳</option>
+              <option value="severe">高等疲劳</option>
+            </select>
+          </div>
+        </div>
+      </form>`;
+
+    layer.open({
+      type: 1,
+      title: '请选择新的疲劳程度',
+      area: ['360px', '240px'],
+      content: html,
+      success: function(){
+        layui.use(['form'], function(){
+          var form = layui.form;
+          form.render('select', 'fatigueForm');
+        });
+      },
+      btn: ['确定', '取消'],
+      yes: function(index) {
+        var fatigueLevel = $('#fatigue-select').val();
+
+        $.ajax({
+          url: '/api/records/' + recordId,
+          type: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify({fatigue_level: fatigueLevel}),
+          success: function(response) {
+            if (response.success) {
+              showSuccess('修改成功');
+              loadRecords();
+            } else {
+              showError('修改失败：' + response.message);
+            }
+          },
+          error: function(xhr, status, error) {
+            showError('修改失败：' + error);
+          }
+        });
+        layer.close(index);
+      }
+    });
+  });
+});
+{% endblock %}
