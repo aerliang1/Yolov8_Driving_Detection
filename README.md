@@ -548,8 +548,8 @@ docker-compose up -d
 
 ## 📞 联系方式
 
-- 项目维护者: [Your Name]
-- 邮箱: [your.email@example.com]
+- 项目维护者: 重庆大学实训小组
+- 邮箱: 951893790@qq.com
 - 项目链接: [https://github.com/yourusername/fp](https://github.com/yourusername/fp)
 
 ## 🙏 致谢
